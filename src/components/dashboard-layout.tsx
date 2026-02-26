@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
     Menu,
-    ChevronDown,
     GalleryVerticalEnd,
     Layout as LayoutIcon,
     Search,
@@ -112,19 +111,36 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* Header */}
                 <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                     <div className="flex h-16 items-center justify-between px-4 lg:px-8">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden"
-                            onClick={() => setSidebarOpen(true)}
-                        >
-                            <Menu className="h-5 w-5" />
-                        </Button>
+                        <div className="flex items-center gap-2 lg:gap-0">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="lg:hidden"
+                                onClick={() => setSidebarOpen(true)}
+                            >
+                                <Menu className="h-5 w-5" />
+                            </Button>
 
-                        <p className="lg:text-2xl text-lg font-bold">
-                            {navItems.find((item) => item.href === pathname)
-                                ?.label || "Dashboard"}
-                        </p>
+                            <p className="lg:text-2xl text-lg font-bold">
+                                {navItems.find((item) => item.href === pathname)
+                                    ?.label || "Dashboard"}
+                            </p>
+                        </div>
+
+                        <button className="w-fit flex items-center gap-3 px-3 py-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                                AD
+                            </div>
+                            <div className="flex-1 overflow-hidden text-left">
+                                <p className="truncate text-sm font-medium">
+                                    Admin
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                    admin@asteriskrd.tech
+                                </p>
+                            </div>
+                            {/* <ChevronDown className="h-4 w-4 text-muted-foreground" /> */}
+                        </button>
                     </div>
                 </header>
 

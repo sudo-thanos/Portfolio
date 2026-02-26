@@ -40,7 +40,8 @@ export default function LabOverviewPage() {
                     Welcome back, Daniel!
                 </h2>
                 <p className="text-muted-foreground mt-2">
-                    Here's what's happening with your innovation projects today.
+                    Here&apos;s what&apos;s happening with your innovation
+                    projects today.
                 </p>
             </div>
 
