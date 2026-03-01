@@ -247,94 +247,99 @@ export default function Projects() {
                     projects.map((project) => (
                         <div
                             key={project.id}
-                            className="bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 flex items-center gap-5 px-5 py-4 group"
+                            className="bg-[#0F0D2A] border flex-wrap border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 justify-between flex items-center gap-5 px-5 py-4 group"
                         >
-                            {/* Thumbnail */}
-                            <div className="shrink-0 w-24 h-16 bg-white/5 border border-white/5 overflow-hidden">
-                                {project.thumbnail_url ? (
-                                    <img
-                                        src={project.thumbnail_url}
-                                        alt={project.title}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-white/15 text-[9px] tracking-widest uppercase">
-                                        No img
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="text-sm font-semibold text-white truncate">
-                                        {project.title}
-                                    </h3>
-                                    {project.featured && (
-                                        <span className="shrink-0 text-[9px] tracking-widest uppercase px-2 py-0.5 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/20">
-                                            Featured
-                                        </span>
+                            <div className="flex  gap-4 items-center w-full">
+                                {/* Thumbnail */}
+                                <div className="shrink-0 w-24 h-16 bg-white/5 border border-white/5 overflow-hidden">
+                                    {project.thumbnail_url ? (
+                                        <img
+                                            src={project.thumbnail_url}
+                                            alt={project.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-white/15 text-[9px] tracking-widest uppercase">
+                                            No img
+                                        </div>
                                     )}
                                 </div>
-                                <p className="text-[11px] text-white/35 truncate mb-2.5 leading-relaxed">
-                                    {project.description || "No description."}
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {project.tech_stack.map((t) => (
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-sm font-semibold text-white truncate">
+                                            {project.title}
+                                        </h3>
+                                        {project.featured && (
+                                            <span className="shrink-0 text-[9px] tracking-widest uppercase px-2 py-0.5 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/20">
+                                                Featured
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-white/35 truncate mb-2.5 leading-relaxed">
+                                        {project.description ||
+                                            "No description."}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {project.tech_stack.map((t) => (
+                                            <span
+                                                key={t}
+                                                className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45"
+                                            >
+                                                {t}
+                                            </span>
+                                        ))}
                                         <span
-                                            key={t}
-                                            className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45"
+                                            key={project.tag}
+                                            className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15"
                                         >
-                                            {t}
+                                            {project.tag}
                                         </span>
-                                    ))}
-                                    <span
-                                        key={project.tag}
-                                        className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15"
-                                    >
-                                        {project.tag}
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Links */}
-                            <div className="shrink-0 hidden sm:flex flex-col gap-1.5 items-end pr-2">
-                                {project.live_url && (
-                                    <a
-                                        href={project.live_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-[10px] tracking-widest uppercase text-[#E8B84B] hover:text-[#E8B84B]/60 transition-colors"
-                                    >
-                                        Live ↗
-                                    </a>
-                                )}
-                                {project.repo_url && (
-                                    <a
-                                        href={project.repo_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-[10px] tracking-widest uppercase text-white/25 hover:text-white/50 transition-colors"
-                                    >
-                                        Repo ↗
-                                    </a>
-                                )}
-                            </div>
+                            <div className="flex gap-3 flex-col items-center">
+                                {/* Links */}
+                                <div className="shrink-0 sm:flex flex-col gap-4 items-end pr-2">
+                                    {project.live_url && (
+                                        <a
+                                            href={project.live_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-[10px] tracking-widest uppercase text-[#E8B84B] hover:text-[#E8B84B]/60 transition-colors"
+                                        >
+                                            Live ↗
+                                        </a>
+                                    )}
+                                    {project.repo_url && (
+                                        <a
+                                            href={project.repo_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-[10px] tracking-widest uppercase text-white/25 hover:text-white/50 transition-colors"
+                                        >
+                                            Repo ↗
+                                        </a>
+                                    )}
+                                </div>
 
-                            {/* Actions — visible on hover */}
-                            <div className="shrink-0 flex gap-2 transition-opacity duration-150">
-                                <button
-                                    onClick={() => openEdit(project)}
-                                    className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-white/10 text-white/35 hover:border-[#E8B84B]/40 hover:text-[#E8B84B] transition-all cursor-pointer"
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => setDeleteId(project.id)}
-                                    className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-[#E8394D]/20 text-[#E8394D]/55 hover:border-[#E8394D] hover:text-[#E8394D] transition-all cursor-pointer"
-                                >
-                                    Delete
-                                </button>
+                                {/* Actions — visible on hover */}
+                                <div className="shrink-0 flex gap-2 transition-opacity duration-150">
+                                    <button
+                                        onClick={() => openEdit(project)}
+                                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-white/10 text-white/35 hover:border-[#E8B84B]/40 hover:text-[#E8B84B] transition-all cursor-pointer"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => setDeleteId(project.id)}
+                                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-[#E8394D]/20 text-[#E8394D]/55 hover:border-[#E8394D] hover:text-[#E8394D] transition-all cursor-pointer"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))

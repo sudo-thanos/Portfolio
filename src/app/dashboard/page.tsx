@@ -1,33 +1,52 @@
 "use client";
 
-import { FileText, Rocket, TrendingUp, Eye } from "lucide-react";
+import { FileText, Rocket, TrendingUp, BookOpen } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function LabOverviewPage() {
+    const [counts, setCounts] = useState({
+        projects: 0,
+        skills: 0,
+        workHistory: 0,
+        resumes: 0,
+    });
+
+    const fetchMetrics = async () => {
+        try {
+            const [
+                { data: projects },
+                { data: skillsData },
+                { data: workData },
+                { data: resumeData },
+            ] = await Promise.all([
+                supabase.from("projects").select("id"),
+                supabase.from("skills").select("id"),
+                supabase.from("work_history").select("id"),
+                supabase.from("resumes").select("id"),
+            ]);
+
+            setCounts({
+                projects: projects?.length ?? 0,
+                skills: skillsData?.length ?? 0,
+                workHistory: workData?.length ?? 0,
+                resumes: resumeData?.length ?? 0,
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    useEffect(() => {
+        fetchMetrics();
+    }, []);
+
     const labStats = [
-        {
-            label: "Total Projects",
-            value: "12",
-            icon: Rocket,
-            change: "+2 this month",
-        },
-        {
-            label: "Case Studies",
-            value: "8",
-            icon: FileText,
-            change: "+1 this week",
-        },
-        {
-            label: "Technologies",
-            value: "4",
-            icon: TrendingUp,
-            change: "No change",
-        },
-        {
-            label: "Page Views",
-            value: "2.4k",
-            icon: Eye,
-            change: "+12% this month",
-        },
+        { label: "Total Projects", value: counts.projects, icon: Rocket },
+        { label: "Skills", value: counts.skills, icon: TrendingUp },
+        { label: "Work History", value: counts.workHistory, icon: BookOpen },
+        { label: "Resumes", value: counts.resumes, icon: FileText },
     ];
 
     const recentUpdates = [
@@ -46,9 +65,13 @@ export default function LabOverviewPage() {
     ];
 
     const quickActions = [
-        { icon: Rocket, label: "Add New Project" },
-        { icon: FileText, label: "Create Case Study" },
-        { icon: TrendingUp, label: "Update Technologies" },
+        { icon: Rocket, label: "Add New Project", href: "/dashboard/projects" },
+        {
+            icon: FileText,
+            label: "Add New Tech Stack",
+            href: "/dashboard/technical-skills",
+        },
+        { icon: TrendingUp, label: "Update Resume", href: "/dashboard/resume" },
     ];
 
     return (
@@ -81,9 +104,6 @@ export default function LabOverviewPage() {
                             <div className="text-2xl font-bold tracking-tight text-white">
                                 {stat.value}
                             </div>
-                            <p className="text-[10px] text-white/25 mt-1.5 tracking-wider">
-                                {stat.change}
-                            </p>
                         </div>
                     );
                 })}
@@ -137,7 +157,8 @@ export default function LabOverviewPage() {
                         {quickActions.map((action, index) => {
                             const Icon = action.icon;
                             return (
-                                <button
+                                <Link
+                                    href={action.href}
                                     key={index}
                                     className="w-full flex items-center gap-3 px-4 py-3 border border-white/8 hover:border-[#E8B84B]/30 hover:bg-[#E8B84B]/3 text-white/40 hover:text-[#E8B84B] transition-all duration-200 cursor-pointer group"
                                 >
@@ -145,7 +166,7 @@ export default function LabOverviewPage() {
                                     <span className="text-[11px] tracking-widest uppercase">
                                         {action.label}
                                     </span>
-                                </button>
+                                </Link>
                             );
                         })}
                     </div>

@@ -28,24 +28,33 @@ const navItems = [
         icon: House,
         label: "Overview",
         href: "/dashboard",
+        disabled: false,
     },
     {
         icon: Braces,
         label: "Projects",
         href: "/dashboard/projects",
+        disabled: false,
     },
     {
         icon: FolderClock,
         label: "Work History",
-        href: "/dashboard/workHistory",
+        href: "/dashboard/work-history",
+        disabled: false,
     },
-    { icon: FileUser, label: "Resume", href: "/dashboard/resume" },
+    {
+        icon: FileUser,
+        label: "Resume",
+        href: "/dashboard/resume",
+        disabled: false,
+    },
     {
         icon: Terminal,
         label: "Technical Skills",
-        href: "/dashboard/technicalSkills",
+        href: "/dashboard/technical-skills",
+        disabled: false,
     },
-    { icon: Search, label: "SEO Settings", href: "#" },
+    { icon: Search, label: "SEO Settings", href: "#", disabled: true },
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -59,7 +68,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Mobile sidebar backdrop */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/50 lg:hidden cursor-pointer"
+                    className={cn(
+                        "fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity duration-300",
+                        sidebarOpen
+                            ? "opacity-100 pointer-events-auto"
+                            : "opacity-0 pointer-events-none",
+                    )}
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -67,7 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed left-0 top-0 z-50 h-full w-64 border-r border-[#f59e0b]/60 bg-card transition-transform duration-300 lg:translate-x-0",
+                    "fixed left-0 top-0 z-50 h-full w-64 border-r border-[#E8B84B]/20 bg-[#0A0820] transition-transform duration-300 lg:translate-x-0",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
                 )}
             >
@@ -87,19 +101,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                                 const Icon = item.icon;
                                 const isActive = pathname === item.href;
 
+                                if (item.disabled) {
+                                    return (
+                                        <span
+                                            key={i}
+                                            className="flex items-center gap-3 px-3 py-2.5 text-[11px] tracking-widest uppercase font-medium border border-transparent text-white/15 cursor-not-allowed"
+                                        >
+                                            <Icon className="h-4 w-4 shrink-0 text-white/10" />
+                                            {item.label}
+                                            <span className="ml-auto text-[9px] tracking-widest uppercase text-white/15 border border-white/10 px-1.5 py-0.5">
+                                                Soon
+                                            </span>
+                                        </span>
+                                    );
+                                }
+
                                 return (
                                     <Link
                                         key={i}
                                         href={item.href}
                                         onClick={() => setSidebarOpen(false)}
                                         className={cn(
-                                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
+                                            "flex items-center gap-3 px-3 py-2.5 text-[11px] tracking-widest uppercase font-medium transition-all duration-200 cursor-pointer border",
                                             isActive
-                                                ? "bg-primary text-primary-foreground"
-                                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                                                ? "bg-[#E8B84B]/10 border-[#E8B84B]/30 text-[#E8B84B]"
+                                                : "border-transparent text-white/35 hover:bg-[#E8B84B]/5 hover:border-[#E8B84B]/15 hover:text-white/70",
                                         )}
                                     >
-                                        <Icon className="h-5 w-5" />
+                                        <Icon
+                                            className={cn(
+                                                "h-4 w-4 shrink-0",
+                                                isActive
+                                                    ? "text-[#E8B84B]"
+                                                    : "text-white/25",
+                                            )}
+                                        />
                                         {item.label}
                                     </Link>
                                 );
