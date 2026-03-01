@@ -1,7 +1,8 @@
-"use client";
 /**
  * Project page
  */
+
+"use client";
 
 import { SquigglyLine } from "@/components/SquigglyLine";
 import Image from "next/image";
@@ -73,7 +74,7 @@ export default function Projects() {
         (index: number) => {
             if (emblaApi) emblaApi.scrollTo(index);
         },
-        [emblaApi]
+        [emblaApi],
     );
 
     const onSelect = useCallback(() => {
@@ -104,33 +105,36 @@ export default function Projects() {
         return (
             <div
                 key={id}
-                className="inter CARD group hover:scale-99 duration-500 transition-transform flex h-full flex-col rounded-[0.75rem] border-2 border-[#FFFFFF]/10"
+                className="group bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/30 transition-all duration-300 flex flex-col h-full"
             >
-                <div className="relative w-full rounded-[0.75rem]">
+                {/* Image */}
+                <div className="relative w-full overflow-hidden">
                     <Image
                         src={image}
                         width={1448}
                         height={1448}
                         alt={`${name} project`}
-                        className="h-48 sm:h-56 md:h-[16rem] w-full rounded-t-[0.75rem] object-cover"
+                        className="h-52 sm:h-60 md:h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-linear-to-t from-[#0F0D2A]/80 via-transparent to-transparent" />
 
-                    <div className="absolute top-3 sm:top-[0.813rem] flex w-full items-center justify-between px-4 sm:px-[1.1rem]">
-                        <p className="flex h-6 sm:h-[1.7rem] items-center rounded-full border-2 border-[#3C83F6]/60 bg-[#3C83F6]/20 px-2 sm:px-[0.7rem] text-xs sm:text-[0.75rem] font-bold text-[#3C83F6]">
+                    {/* Category + Link */}
+                    <div className="absolute top-4 flex w-full items-center justify-between px-5">
+                        <span className="text-[10px] tracking-widest uppercase px-3 py-1 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/25">
                             {category}
-                        </p>
-
+                        </span>
                         <Link
                             href={projectUrl}
-                            className="flex h-8 sm:h-[2.188rem] group-hover:border-[#F59E0B] transition-all ease-in-out duration-500 w-8 sm:w-[2.188rem] items-center justify-center rounded-full border-2 border-[#3C83F6]/60 bg-[#3C83F6]/20"
+                            target="_blank"
+                            className="flex h-8 w-8 items-center justify-center border border-white/15 bg-black/40 hover:border-[#E8B84B]/50 hover:bg-[#E8B84B]/10 transition-all duration-300 backdrop-blur-sm"
                         >
                             <svg
-                                width="64"
-                                height="64"
-                                viewBox="0 0 64 64"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
                                 fill="none"
-                                className="h-4 sm:h-[1.3rem] text-[#477EEE] group-hover:text-[#F59E0B] transition-all ease-in-out duration-500 w-4 sm:w-[1.3rem]"
-                                xmlns="http://www.w3.org/2000/svg"
+                                className="text-white/60 group-hover:text-[#E8B84B] transition-colors"
                             >
                                 <path
                                     d="M20 44L44 20M44 20H24M44 20V40"
@@ -139,43 +143,63 @@ export default function Projects() {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                 />
+                                <path
+                                    d="M7 17L17 7M17 7H9M17 7V15"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
                             </svg>
                         </Link>
                     </div>
                 </div>
 
-                <div className="h-full rounded-b-[0.75rem] bg-[#06031B] px-4 sm:px-5 md:px-[1.3rem] py-4 sm:py-5 md:py-[1.3rem] text-left">
-                    <h3 className="text-lg sm:text-xl md:text-[1.5rem] font-bold">
+                {/* Content */}
+                <div className="flex flex-col flex-1 px-6 py-6 space-y-5">
+                    <h3 className="text-lg font-bold text-white tracking-tight leading-snug">
                         {name}
                     </h3>
 
-                    <div className="mt-4 sm:mt-5 md:mt-[1.5rem] space-y-3 sm:space-y-4 md:space-y-[1rem]">
-                        <div>
-                            <h3 className="text-xs sm:text-sm md:text-[0.875rem] font-bold text-[#60E6FB] uppercase">
-                                Description
-                            </h3>
-                            <p className="mt-2 md:mt-[0.5rem] text-sm sm:text-base md:text-[0.938rem] font-normal text-[#A1A1AA] leading-relaxed">
-                                {description}
-                            </p>
-                        </div>
+                    {/* Description */}
+                    <div>
+                        <p className="text-[10px] tracking-widest uppercase text-[#E8B84B]/50 mb-2">
+                            Description
+                        </p>
+                        <p className="text-sm text-white/45 leading-relaxed">
+                            {description}
+                        </p>
+                    </div>
 
-                        <div>
-                            <h3 className="text-xs sm:text-sm md:text-[0.875rem] font-bold text-[#BF83FC] uppercase">
-                                Project Stack
-                            </h3>
-                            <div className="mt-2 flex flex-wrap items-center gap-1 sm:gap-2 md:gap-[.3rem]">
-                                {technologies.map((tech, index) => {
-                                    return (
-                                        <p
-                                            key={index}
-                                            className="flex h-6 sm:h-[1.7rem] items-center rounded-full border-2 border-[#27272A]/50 bg-[#27272A]/20 px-2 sm:px-[0.7rem] text-xs sm:text-[0.75rem] font-bold text-[#A1A1AA]"
-                                        >
-                                            {tech}
-                                        </p>
-                                    );
-                                })}
-                            </div>
+                    {/* Tech stack */}
+                    <div>
+                        <p className="text-[10px] tracking-widest uppercase text-white/30 mb-2.5">
+                            Stack
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {technologies.map((tech, index) => (
+                                <span
+                                    key={index}
+                                    className="text-[10px] px-2.5 py-1 bg-white/5 text-white/45 border border-white/8 tracking-wider"
+                                >
+                                    {tech}
+                                </span>
+                            ))}
                         </div>
+                    </div>
+
+                    {/* Visit link */}
+                    <div className="pt-2 mt-auto">
+                        <Link
+                            href={projectUrl}
+                            target="_blank"
+                            className="inline-flex items-center gap-2 text-[11px] tracking-widest uppercase text-[#E8B84B]/60 hover:text-[#E8B84B] transition-colors group/link"
+                        >
+                            View Project
+                            <span className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform inline-block">
+                                ↗
+                            </span>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -183,104 +207,102 @@ export default function Projects() {
     };
 
     return (
-        <>
-            <section className="w-full text-base sm:text-lg md:text-[1.3rem] max-w-[60rem] mt-12 sm:mt-16 md:mt-[8rem] pb-12 sm:pb-16 md:pb-[4rem] mx-auto px-4 sm:px-6 md:px-0">
-                <div className="w-full md:w-[90%]">
-                    <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-bold leading-tight">
-                        My Projects
-                    </h1>
-                    <h3 className="text-sm sm:text-base md:text-[1.3rem] mt-4 md:mt-[1rem] leading-relaxed">
-                        A collection of Web applications and development
-                        projects showcasing my expertise in the React ecosystem.
-                    </h3>
-                    <SquigglyLine />
+        <section className="w-full text-white max-w-6xl mt-16 md:mt-24 pb-16 md:pb-24 mx-auto px-4 sm:px-6 md:px-8">
+            {/* Header */}
+            <div className="border-b border-[#E8B84B]/10 pb-8 mb-12">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+                    My Projects
+                </h1>
+                <p className="text-md text-white/50 mt-3 max-w-xl leading-relaxed">
+                    A collection of web applications and development projects
+                    showcasing my expertise in the React ecosystem.
+                </p>
+                <SquigglyLine />
+            </div>
 
-                    {/* Mobile Carousel */}
-                    <div className="block md:hidden mt-6 sm:mt-8">
-                        <div className="embla overflow-hidden" ref={emblaRef}>
-                            <div className="embla__container flex">
-                                {projects.map((project) => (
-                                    <div
-                                        key={project.id}
-                                        className="embla__slide flex-[0_0_100%] min-w-0 px-2"
-                                    >
-                                        <ProjectCard project={project} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Carousel Controls */}
-                        <div className="flex items-center justify-center mt-6 gap-4">
-                            <button
-                                onClick={scrollPrev}
-                                disabled={!canScrollPrev}
-                                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-[#3C83F6]/60 bg-[#3C83F6]/20 disabled:opacity-30 transition-all"
-                            >
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    className="text-[#477EEE]"
-                                >
-                                    <path
-                                        d="M15 18L9 12L15 6"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </button>
-
-                            {/* Dots */}
-                            <div className="flex gap-2">
-                                {projects.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => scrollTo(index)}
-                                        className={`h-2 w-2 rounded-full transition-all ${
-                                            index === selectedIndex
-                                                ? "bg-[#F59E0B] w-4"
-                                                : "bg-[#A1A1AA]/40"
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-
-                            <button
-                                onClick={scrollNext}
-                                disabled={!canScrollNext}
-                                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-[#3C83F6]/60 bg-[#3C83F6]/20 disabled:opacity-30 transition-all"
-                            >
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    className="text-[#477EEE]"
-                                >
-                                    <path
-                                        d="M9 18L15 12L9 6"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Desktop Grid */}
-                    <div className="hidden md:grid grid-cols-2 gap-8 md:gap-[2rem] mt-8 md:mt-[4rem]">
+            {/* Mobile Carousel */}
+            <div className="block md:hidden">
+                <div className="embla overflow-hidden" ref={emblaRef}>
+                    <div className="embla__container flex gap-4">
                         {projects.map((project) => (
-                            <ProjectCard key={project.id} project={project} />
+                            <div
+                                key={project.id}
+                                className="embla__slide flex-[0_0_88%] min-w-0"
+                            >
+                                <ProjectCard project={project} />
+                            </div>
                         ))}
                     </div>
                 </div>
-            </section>
-        </>
+
+                {/* Carousel Controls */}
+                <div className="flex items-center justify-center mt-8 gap-5">
+                    <button
+                        onClick={scrollPrev}
+                        disabled={!canScrollPrev}
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#E8B84B]/20 hover:border-[#E8B84B]/50 disabled:opacity-20 transition-all"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className="text-[#E8B84B]"
+                        >
+                            <path
+                                d="M15 18L9 12L15 6"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+
+                    <div className="flex gap-2">
+                        {projects.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => scrollTo(index)}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${
+                                    index === selectedIndex
+                                        ? "bg-[#E8B84B] w-6"
+                                        : "bg-white/20 w-1.5"
+                                }`}
+                            />
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={scrollNext}
+                        disabled={!canScrollNext}
+                        className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#E8B84B]/20 hover:border-[#E8B84B]/50 disabled:opacity-20 transition-all"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className="text-[#E8B84B]"
+                        >
+                            <path
+                                d="M9 18L15 12L9 6"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {/* Desktop Grid — 2 cols, generous gap */}
+            <div className="hidden md:grid grid-cols-2 gap-6 lg:gap-8">
+                {projects.map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                ))}
+            </div>
+        </section>
     );
 }

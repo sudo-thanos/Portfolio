@@ -13,18 +13,8 @@ interface Skill {
 }
 
 const skills: Skill[] = [
-    {
-        id: 1,
-        skill: "Next.js",
-        iconUrl: "/icons/nextjs.svg",
-        slug: "nextjs",
-    },
-    {
-        id: 2,
-        skill: "React",
-        iconUrl: "/icons/react.svg",
-        slug: "react",
-    },
+    { id: 1, skill: "Next.js", iconUrl: "/icons/nextjs.svg", slug: "nextjs" },
+    { id: 2, skill: "React", iconUrl: "/icons/react.svg", slug: "react" },
     {
         id: 3,
         skill: "JavaScript",
@@ -49,96 +39,83 @@ const skills: Skill[] = [
         iconUrl: "/icons/bootstrap.svg",
         slug: "bootstrap",
     },
-    {
-        id: 7,
-        skill: "Git",
-        iconUrl: "/icons/git.svg",
-        slug: "git",
-    },
-    {
-        id: 8,
-        skill: "GitHub",
-        iconUrl: "/icons/github.svg",
-        slug: "github",
-    },
+    { id: 7, skill: "Git", iconUrl: "/icons/git.svg", slug: "git" },
+    { id: 8, skill: "GitHub", iconUrl: "/icons/github.svg", slug: "github" },
     {
         id: 9,
         skill: "Markdown",
         iconUrl: "/icons/markdown.svg",
         slug: "markdown",
     },
-    {
-        id: 10,
-        skill: "Linux",
-        iconUrl: "/icons/linux.svg",
-        slug: "linux",
-    },
+    { id: 10, skill: "Linux", iconUrl: "/icons/linux.svg", slug: "linux" },
 ];
 
 export default function Resume() {
     return (
-        <>
-            <section className="w-full max-w-[60rem] pb-12 sm:pb-16 md:pb-[4rem] text-base sm:text-lg md:text-[1.5rem] mx-auto px-4 sm:px-6 md:px-0">
-                {/* Introduction Section */}
-                <div className="w-full md:w-[90%] mt-[4rem]">
-                    <h2 className="text-3xl sm:text-3xl md:text-[2.5rem] font-bold leading-tight">
-                        My Resume/CV
-                    </h2>
-                    <p className="mt-4 md:mt-[1rem] leading-relaxed sm:leading-relaxed md:leading-normal text-base sm:text-base md:text-[1.5rem]">
-                        {/* eslint-disable-next-line */}
-                        I'm a dedicated full-stack engineer with 3 years of
-                        professional experience developing innovative web
-                        {/* eslint-disable-next-line */}
-                        applications. I'm constantly expanding my skill set and
-                        love tackling challenging projects. Discover my
-                        {/* eslint-disable-next-line */}
-                        technical expertise and the work I've delivered for
-                        clients and teams.
+        <section className="w-full text-white max-w-6xl mt-16 md:mt-24 pb-16 md:pb-24 mx-auto px-4 sm:px-6 md:px-8">
+            {/* Header */}
+            <div className="border-b border-[#E8B84B]/10 pb-8 mb-12">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+                    My Resume / CV
+                </h1>
+                <p className="text-md text-white/50 mt-3 max-w-2xl leading-relaxed">
+                    I&apos;m a dedicated full-stack engineer with 3 years of
+                    professional experience developing innovative web
+                    applications. I&apos;m constantly expanding my skill set and
+                    love tackling challenging projects.
+                </p>
+                <SquigglyLine />
+            </div>
+
+            {/* Skills Section */}
+            <div className="mb-16">
+                {/* Section label */}
+                <div className="flex items-center gap-4 mb-8">
+                    <p className="text-md tracking-widest uppercase text-[#E8B84B]/60">
+                        Technical Skills
                     </p>
-                    <SquigglyLine />
+                    <div className="flex-1 h-px bg-[#E8B84B]/10" />
                 </div>
 
-                {/* Skills Section */}
-                <div className="w-full md:w-[90%]">
-                    <h2 className="text-3xl sm:text-3xl md:text-[2.5rem] font-bold mt-8 sm:mt-12 md:mt-[4rem] leading-tight">
-                        Skills
-                    </h2>
-                    <p className="text-base sm:text-base md:text-[1.5rem] leading-relaxed sm:leading-relaxed md:leading-normal">
-                        Here are the frameworks, libraries, services and
-                        runtimes I have experience with. This is not a complete
-                        {/* eslint-disable-next-line */}
-                        list! I'm constantly gaining new skills, and hence it
-                        can be a little bit outdated.
+                <p className="text-md text-white/50 mb-8 max-w-2xl leading-relaxed">
+                    Frameworks, libraries, services and runtimes I have
+                    experience with. Constantly gaining new skills so this list
+                    may be slightly outdated.
+                </p>
+
+                {/* Skills Grid */}
+                <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {skills.map(({ id, skill, iconUrl, slug }) => (
+                        <li
+                            key={id}
+                            className="flex items-center gap-3 px-4 py-3 bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/30 transition-all duration-200 group"
+                        >
+                            <Image
+                                src={iconUrl}
+                                width={20}
+                                height={20}
+                                alt={`${slug} icon`}
+                                className="w-5 h-5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity"
+                            />
+                            <span className="text-xs text-white/50 group-hover:text-white/80 transition-colors tracking-wide truncate">
+                                {skill}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Work History Section */}
+            <div>
+                <div className="flex items-center gap-4 mb-8">
+                    <p className="text-md tracking-widest uppercase text-[#E8B84B]/60">
+                        Work History
                     </p>
-
-                    {/* Skills Grid */}
-                    <ul className="mt-6 sm:mt-8 md:mt-[3rem] grid grid-cols-3 md:grid-cols-4 lg:flex items-center flex-wrap gap-3 sm:gap-4 md:gap-[1rem]">
-                        {skills.map((skills) => {
-                            const { id, skill, iconUrl, slug } = skills;
-                            return (
-                                <li
-                                    key={id}
-                                    className="flex items-center gap-2 sm:gap-3 md:gap-[.8rem] text-sm sm:text-base md:text-[1rem] font-medium p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                                >
-                                    <Image
-                                        src={iconUrl}
-                                        width={24}
-                                        height={24}
-                                        alt={`${slug} Image`}
-                                        className="w-5 h-5 sm:w-6 sm:h-6 md:w-[2rem] md:h-[2rem] flex-shrink-0"
-                                    />
-                                    <span className="truncate">{skill}</span>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                    <div className="flex-1 h-px bg-[#E8B84B]/10" />
                 </div>
 
-                {/* Work History Section */}
-                <div className="mt-8 sm:mt-12 md:mt-[3rem]">
-                    <WorkHistory />
-                </div>
-            </section>
-        </>
+                <WorkHistory />
+            </div>
+        </section>
     );
 }

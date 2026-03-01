@@ -10,6 +10,10 @@ import {
     Search,
     House,
     LogOut,
+    Braces,
+    FolderClock,
+    FileUser,
+    Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,11 +30,21 @@ const navItems = [
         href: "/dashboard",
     },
     {
-        icon: GalleryVerticalEnd,
+        icon: Braces,
         label: "Projects",
         href: "/dashboard/projects",
     },
-    { icon: LayoutIcon, label: "Footer", href: "#" },
+    {
+        icon: FolderClock,
+        label: "Work History",
+        href: "/dashboard/workHistory",
+    },
+    { icon: FileUser, label: "Resume", href: "/dashboard/resume" },
+    {
+        icon: Terminal,
+        label: "Technical Skills",
+        href: "/dashboard/technicalSkills",
+    },
     { icon: Search, label: "SEO Settings", href: "#" },
 ];
 

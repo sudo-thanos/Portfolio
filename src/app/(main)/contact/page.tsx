@@ -8,18 +8,18 @@ import Link from "next/link";
 export default function Contact() {
     return (
         <>
-            <section className="w-[90%] text-base md:text-[1.3rem] max-w-[60rem] mt-[8rem] pb-[4rem] mx-auto">
+            <section className="w-[90%] px-4 text-base md:text-[1.3rem] max-w-6xl mt-48 pb-16 mx-auto">
                 <div>
                     <h2 className="text-3xl md:text-[2.5rem] font-bold">
                         Get in touch
                     </h2>
-                    <p className="mt-[1rem]">
+                    <p className="text-md text-white/50 mt-3 max-w-xl leading-relaxed">
                         {"Do you have an exciting project? Let's talk!"}
                     </p>
 
                     <SquigglyLine />
 
-                    <div className="mt-[2rem] leading-relaxed">
+                    <div className="mt-8 leading-relaxed">
                         <p>
                             You can reach me anytime at{" "}
                             <a

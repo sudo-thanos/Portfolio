@@ -2,8 +2,6 @@
  * Work history component
  */
 
-// import Image from "next/image";
-
 interface WorkExperience {
     id: number;
     role: string;
@@ -76,103 +74,123 @@ const workHistory: WorkExperience[] = [
     },
 ];
 
+const typeColors: Record<string, string> = {
+    "Full-Time": "bg-[#E8B84B]/10 text-[#E8B84B] border-[#E8B84B]/20",
+    Internship: "bg-white/5 text-white/40 border-white/10",
+    Volunteer: "bg-[#E8394D]/10 text-[#E8394D]/80 border-[#E8394D]/20",
+    Contract: "bg-white/5 text-white/40 border-white/10",
+};
+
 export default function WorkHistory() {
     return (
-        <>
-            <section className="w-full">
-                <h1 className="text-2xl sm:text-3xl md:text-[2.5rem] font-bold mt-8 sm:mt-12 md:mt-[4rem] leading-tight">
-                    Work History
-                </h1>
-                <p className="text-sm sm:text-base md:text-[1.5rem] leading-relaxed sm:leading-relaxed md:leading-normal mt-4 md:mt-[1rem]">
-                    Below you will find a summary of my past employment
-                    experience. Additionally, if you require, you can{" "}
-                    <a
-                        href="/files/daniel_resume.pdf"
-                        download
-                        className="cursor-pointer border-b-2 border-[#f59e0b] hover:border-[#d97706] transition-colors"
-                    >
-                        download my resume.
-                    </a>
-                </p>
+        <section className="w-full">
+            {/* Download line */}
+            <p className="text-base text-white/50 mb-10 leading-relaxed">
+                A summary of my past employment experience. You can also{" "}
+                <a
+                    href="/files/daniel_resume.pdf"
+                    download
+                    className="text-[#E8B84B]/70 hover:text-[#E8B84B] border-b border-[#E8B84B]/30 hover:border-[#E8B84B] transition-colors"
+                >
+                    download my resume
+                </a>
+                .
+            </p>
 
-                <section className="mt-6 sm:mt-8 md:mt-[3rem]">
-                    <div className="w-full">
-                        <div className="relative border-l-2 border-gray-700 ml-2 sm:ml-4 md:ml-[1rem]">
-                            {workHistory.map((items) => {
-                                const {
-                                    id,
-                                    role,
-                                    company,
-                                    location,
-                                    type,
-                                    period,
-                                    description,
-                                } = items;
+            {/* Timeline */}
+            <div className="relative pl-8">
+                {/* Vertical line — absolutely positioned, starts and ends at dot centers */}
+                <div
+                    className="absolute left-[7px] top-3.5 w-px bg-[#E8B84B]/15"
+                    style={{ bottom: "14px" }}
+                />
 
-                                return (
-                                    <div
-                                        key={id}
-                                        className={`relative pl-4 sm:pl-6 md:pl-8 ${
-                                            id === workHistory.length
-                                                ? "pb-1"
-                                                : "pb-8 sm:pb-10 md:pb-12"
-                                        }`}
-                                    >
-                                        {/* Timeline Dot */}
-                                        <span
-                                            className={`absolute left-[-0.44rem] sm:left-[-0.45rem] md:left-[-0.55rem] top-[0.3rem] sm:top-[0.4rem] md:top-[0.45rem] w-[0.75rem] h-[0.75rem] sm:w-[0.875rem] sm:h-[0.875rem] md:w-[1rem] md:h-[1rem] rounded-full bg-[#f59e0b] ${
-                                                id === 1
-                                                    ? "ring-4 sm:ring-[0.375rem] md:ring-[.5rem] ring-[#f59e0b]/60"
-                                                    : ""
-                                            }`}
-                                        ></span>
+                <div className="space-y-6">
+                    {workHistory.map((item, index) => {
+                        const {
+                            id,
+                            role,
+                            company,
+                            location,
+                            type,
+                            period,
+                            description,
+                        } = item;
+                        const isFirst = index === 0;
 
-                                        <div className="space-y-2 sm:space-y-3 md:space-y-1">
-                                            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-[1.5rem] leading-tight sm:leading-relaxed md:leading-[1.8rem]">
-                                                {role}
-                                            </h3>
+                        return (
+                            <div key={id} className="relative">
+                                {/* Dot — centered on the line at left-[7px], offset back by half its width (8px) */}
+                                <div
+                                    className={`absolute -left-8 top-3.5 -translate-y-1/2 w-4 h-4 rounded-full border-2 z-10 ${
+                                        isFirst
+                                            ? "bg-[#E8B84B] border-[#E8B84B] shadow-[0_0_12px_rgba(232,184,75,0.45)]"
+                                            : "bg-[#0A0820] border-[#E8B84B]/35"
+                                    }`}
+                                />
 
-                                            {/* Company Info - Stack on mobile, inline on larger screens */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
-                                                <p className="text-white/80 text-sm sm:text-base md:text-[1.2rem] font-medium">
-                                                    {company}
-                                                </p>
-                                                <span className="hidden sm:inline text-white/80 text-sm sm:text-base md:text-[1.2rem] font-medium mx-2">
-                                                    •
-                                                </span>
-                                                <p className="text-white/80 text-sm sm:text-base md:text-[1.2rem] font-medium">
-                                                    {location}
-                                                </p>
-                                                <span className="hidden sm:inline text-white/80 text-sm sm:text-base md:text-[1.2rem] font-medium mx-2">
-                                                    •
-                                                </span>
-                                                <p className="text-white/80 text-sm sm:text-base md:text-[1.2rem] font-medium">
-                                                    {type}
-                                                </p>
+                                {/* Card */}
+                                <div className="bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 p-6">
+                                    {/* Top row */}
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2.5 mb-1.5">
+                                                <h3 className="text-lg font-semibold text-white tracking-tight">
+                                                    {role}
+                                                </h3>
+                                                {isFirst && (
+                                                    <span className="shrink-0 text-[11px] tracking-widest uppercase px-2 py-0.5 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/20">
+                                                        Latest
+                                                    </span>
+                                                )}
                                             </div>
+                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                <span className="text-sm text-white/50 font-medium">
+                                                    {company}
+                                                </span>
+                                                <span className="text-white/20 text-[10px]">
+                                                    ·
+                                                </span>
+                                                <span className="text-sm text-white/35">
+                                                    {location}
+                                                </span>
+                                            </div>
+                                        </div>
 
-                                            <p className="text-white/70 text-xs sm:text-sm md:text-[1rem] font-medium">
+                                        {/* Period + type */}
+                                        <div className="flex sm:flex-col items-start sm:items-end gap-2 shrink-0">
+                                            <span
+                                                className={`text-[11px] tracking-widest uppercase px-2.5 py-1 border ${typeColors[type] ?? "bg-white/5 text-white/40 border-white/10"}`}
+                                            >
+                                                {type}
+                                            </span>
+                                            <span className="text-xs text-white/25 tracking-wider">
                                                 {period}
-                                            </p>
-
-                                            <ul className="list-disc text-white/90 text-sm sm:text-base md:text-[1.3rem] mt-3 sm:mt-4 md:mt-3 pl-4 sm:pl-6 md:pl-[2rem] space-y-2 sm:space-y-2 md:space-y-1">
-                                                {description.map((item, i) => (
-                                                    <li
-                                                        key={i}
-                                                        className="leading-relaxed"
-                                                    >
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            </span>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </section>
-            </section>
-        </>
+
+                                    {/* Divider */}
+                                    <div className="h-px bg-[#E8B84B]/8 mb-4" />
+
+                                    {/* Description */}
+                                    <ul className="space-y-2">
+                                        {description.map((point, i) => (
+                                            <li
+                                                key={i}
+                                                className="flex items-start gap-3 text-sm text-white/35 leading-relaxed"
+                                            >
+                                                <span className="shrink-0 mt-[5px] w-1 h-1 bg-[#E8B84B]/30 rounded-full" />
+                                                {point}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </section>
     );
 }

@@ -5,7 +5,7 @@ export default function Home() {
     return (
         <>
             <section className="w-full flex flex-col items-center justify-center min-h-[80vh] text-lg sm:text-xl md:text-2xl font-medium px-4 sm:px-6">
-                <div className="w-full max-w-[60rem] mx-auto">
+                <div className="w-full max-w-6xl mx-auto">
                     <div>
                         <h2 className="text-3xl sm:text-4xl md:text-[2.5rem] font-bold leading-tight">
                             Hey, I&apos;m{" "}
@@ -14,7 +14,7 @@ export default function Home() {
                             </span>
                             !
                         </h2>
-                        <p className="w-full sm:w-[85%] md:w-[70%] text-base sm:text-lg md:text-[1.3rem] leading-relaxed sm:leading-[1.8rem] md:leading-[2rem] mt-4 md:mt-[1rem]">
+                        <p className="w-full sm:w-[85%] md:w-[70%] text-base sm:text-lg md:text-[1.3rem] leading-relaxed sm:leading-[1.8rem] md:leading-8 mt-4 md:mt-4">
                             A freelance full-stack engineer based in Abuja,
                             Nigeria. I specialize in developing applications
                             using the React Ecosystem. Currently, I&apos;m
@@ -30,11 +30,11 @@ export default function Home() {
 
                     <SquigglyLine />
 
-                    <div className="mt-6 md:mt-[2rem]">
+                    <div className="mt-6 md:mt-8">
                         <p className="text-lg sm:text-xl md:text-2xl">
                             Find me on
                         </p>
-                        <div className="sm:flex grid grid-cols-2 sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-[3rem] mt-4 md:mt-[1rem]">
+                        <div className="sm:flex grid grid-cols-2 sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-12 mt-4 md:mt-4">
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="https://x.com/ChumaUdechukwu"
@@ -68,11 +68,11 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="mt-6 md:mt-[2rem]">
+                    <div className="mt-6 md:mt-8">
                         <p className="text-lg sm:text-xl md:text-2xl">
                             Contact
                         </p>
-                        <p className="mt-4 md:mt-[1rem] text-base sm:text-lg md:text-xl leading-relaxed">
+                        <p className="mt-4 md:mt-4 text-base sm:text-lg md:text-xl leading-relaxed">
                             You can reach me anytime at{" "}
                             <a
                                 href="mailto:danieludechukwu117@gmail.com"

@@ -40,16 +40,18 @@ export default function Navigation() {
 
     return (
         <>
-            <nav className="w-[90%] uppercase mx-auto py-[1rem] items-center flex justify-between relative">
-                <Link href="/">
-                    <p className="text-[2.5rem] lg:text-[3rem] font-bold flex gap-[.5rem]">
-                        {/* eslint-disable-next-line */}
-                        <span className="text-accent">//</span>DU
-                    </p>
+            <nav className="w-[90%] uppercase mx-auto py-4 items-center flex justify-between relative">
+                <Link
+                    href="/"
+                    className="font-bold text-[2.5rem] lg:text-[3rem]  flex gap-2"
+                >
+                    {/* eslint-disable-next-line */}
+                    <span className="text-accent">//</span>
+                    <p className="mt-1">DU</p>
                 </Link>
 
                 {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-[2rem]">
+                <div className="hidden md:flex items-center gap-8">
                     {navItems.map((items) => {
                         const { id, navItem, path } = items;
                         return (
@@ -60,14 +62,14 @@ export default function Navigation() {
                             </Link>
                         );
                     })}
-                    <section className="flex items-center gap-[1.5rem]">
+                    <section className="flex items-center gap-6">
                         <Link href="https://x.com/ChumaUdechukwu">
                             <Image
                                 src="/icons/x.svg"
                                 width={32}
                                 height={32}
                                 alt="Social Icon"
-                                className="w-[1.5rem] cursor-pointer hover:opacity-70 transition-opacity"
+                                className="w-6 cursor-pointer hover:opacity-70 transition-opacity"
                             />
                         </Link>
                         <Link href="https://www.linkedin.com/in/udechukwudc/">
@@ -76,7 +78,7 @@ export default function Navigation() {
                                 width={32}
                                 height={32}
                                 alt="Social Icon"
-                                className="w-[1.5rem] cursor-pointer hover:opacity-70 transition-opacity"
+                                className="w-6 cursor-pointer hover:opacity-70 transition-opacity"
                             />
                         </Link>
                     </section>
@@ -145,14 +147,14 @@ export default function Navigation() {
                         })}
 
                         {/* Mobile Social Icons */}
-                        <section className="flex items-center gap-[1.5rem] mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <section className="flex items-center gap-6 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                             <Link href="https://x.com/ChumaUdechukwu">
                                 <Image
                                     src="/icons/x.svg"
                                     width={32}
                                     height={32}
                                     alt="Social Icon"
-                                    className="w-[1.5rem] cursor-pointer hover:opacity-70 transition-opacity"
+                                    className="w-6 cursor-pointer hover:opacity-70 transition-opacity"
                                 />
                             </Link>
                             <Link href="https://www.linkedin.com/in/udechukwudc/">
@@ -161,7 +163,7 @@ export default function Navigation() {
                                     width={32}
                                     height={32}
                                     alt="Social Icon"
-                                    className="w-[1.5rem] cursor-pointer hover:opacity-70 transition-opacity"
+                                    className="w-6 cursor-pointer hover:opacity-70 transition-opacity"
                                 />
                             </Link>
                         </section>
