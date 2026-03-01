@@ -7,7 +7,7 @@ import { useState } from "react";
 export default function LoginPage() {
     const { login, isAuthenticated } = useAuth();
     const router = useRouter();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -26,8 +26,8 @@ export default function LoginPage() {
         console.log("Autenticating");
 
         try {
-            await login(username, password);
-            router.push("/dashboard");
+            await login(email, password);
+            // router.push("/dashboard");
         } catch (err) {
             setError("Invalid credentials");
             console.log(err);
@@ -37,8 +37,8 @@ export default function LoginPage() {
     };
 
     return (
-        <section className="w-full flex items-center justify-center min-h-[100vh]">
-            <div className="w-full max-w-md">
+        <section className="w-full flex items-center justify-center min-h-screen">
+            <div className="w-[90%] mx-auto max-w-md">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold mb-2">Login</h1>
                     <p className="text-gray-400">
@@ -62,11 +62,11 @@ export default function LoginPage() {
                         </label>
                         <input
                             id="text"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-2 bg-[#0F0D2A] border border-[#E8B84B] rounded text-white placeholder-[#6B6890] focus:outline-none focus:border-accent"
-                            placeholder="John Doe"
+                            placeholder="yourmail@mail.com"
                             required
                         />
                     </div>

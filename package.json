@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/supabase-js": "^2.98.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
+    "ldrs": "^1.1.9",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "react": "19.2.4",

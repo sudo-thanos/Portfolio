@@ -53,20 +53,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed left-0 top-0 z-50 h-full w-64 border-r bg-card transition-transform duration-300 lg:translate-x-0",
+                    "fixed left-0 top-0 z-50 h-full w-64 border-r border-[#f59e0b]/60 bg-card transition-transform duration-300 lg:translate-x-0",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
                 )}
             >
                 <div className="flex h-full flex-col">
                     <Link href="" className="px-3 h-16">
-                        <p className="text-[2.5rem] lg:text-[2.5rem] font-bold flex gap-[.5rem]">
+                        <p className="text-[2.5rem] lg:text-[2.5rem] font-bold flex gap-2s">
                             {/* eslint-disable-next-line */}
                             <span className="text-accent">//</span>DU
                         </p>
                     </Link>
 
                     {/* Navigation */}
-                    <nav className="flex-1 space-y-1 border-t px-3 py-4 lg:py-8  overflow-y-auto ">
+                    <nav className="flex-1 space-y-1 border-t border-[#f59e0b]/60 px-3 py-4 lg:py-8  overflow-y-auto ">
                         {/* Shared Navigation */}
                         <div className="space-y-1">
                             {navItems.map((item, i) => {
@@ -94,7 +94,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     </nav>
 
                     {/* Footer */}
-                    <div className="border-t p-4">
+                    <div className="border-t border-[#f59e0b]/60 p-4">
                         <button
                             onClick={logout}
                             className="w-full flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2 hover:bg-muted transition-colors cursor-pointer font-bold text-[#f59e0b]"
@@ -109,7 +109,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Main Content */}
             <div className="lg:pl-64">
                 {/* Header */}
-                <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <header className="sticky top-0 z-30 border-b border-[#f59e0b]/60 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
                     <div className="flex h-16 items-center justify-between px-4 lg:px-8">
                         <div className="flex items-center gap-2 lg:gap-0">
                             <Button
@@ -136,7 +136,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                                     Admin
                                 </p>
                                 <p className="truncate text-xs text-muted-foreground">
-                                    admin@asteriskrd.tech
+                                    Thanos
                                 </p>
                             </div>
                             {/* <ChevronDown className="h-4 w-4 text-muted-foreground" /> */}
