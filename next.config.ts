@@ -7,6 +7,10 @@ const nextConfig = {
                 protocol: "https",
                 hostname: "ehulysecnfbmcxgjinsp.supabase.co",
             },
+            {
+                protocol: "https",
+                hostname: "cdn.simpleicons.org",
+            },
         ],
     },
 };
