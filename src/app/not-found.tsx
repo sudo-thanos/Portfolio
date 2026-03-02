@@ -8,7 +8,7 @@ import Image from "next/image";
 export default function NotFound() {
     return (
         <>
-            <section className="w-[90%] max-w-[60rem] pt-[8rem] text-[1.5rem] mx-auto">
+            <section className="w-[90%] max-w-240 pt-32 text-[1.5rem] mx-auto">
                 <h2 className="text-[2.5rem] font-bold">Page Not Found</h2>
 
                 <p className="mt-2 text-[1.5rem]">

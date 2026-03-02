@@ -15,6 +15,7 @@ interface Project {
     repo_url: string;
     featured: boolean;
     thumbnail_url: string;
+    sort_order: number;
 }
 
 const empty: Omit<Project, "id"> = {
@@ -26,6 +27,7 @@ const empty: Omit<Project, "id"> = {
     repo_url: "",
     featured: false,
     thumbnail_url: "",
+    sort_order: 0,
 };
 
 export default function Projects() {
@@ -43,10 +45,11 @@ export default function Projects() {
     const [isCreating, setIsCreating] = useState(false);
     const [isEditing, setIsEdting] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    const [reordering, setReordering] = useState<string | null>(null);
 
     const openAdd = () => {
         setEditing(null);
-        setForm(empty);
+        setForm({ ...empty, sort_order: projects.length });
         setImageFile(null);
         setImagePreview("");
         setTechInput("");
@@ -58,8 +61,8 @@ export default function Projects() {
         setEditing(project);
         setForm({ ...project });
         setImagePreview(project.thumbnail_url);
-        // setTechInput(project.tech_stack.join(", "));
-        // setTagInput(project.tag.join(", "));
+        setTechInput((project.tech_stack ?? []).join(", "));
+        setTagInput(project.tag ?? "");
         setImageFile(null);
         setShowForm(true);
     };
@@ -78,16 +81,11 @@ export default function Projects() {
 
     const fetchProjects = async () => {
         setIsFetching(true);
-
         const { data, error } = await supabase
             .from("projects")
             .select("*")
-            .order("created_at", { ascending: false });
-
+            .order("sort_order", { ascending: true });
         if (error) throw new Error(error.message);
-
-        console.log(data);
-
         setProjects(data);
         setIsFetching(false);
     };
@@ -98,24 +96,20 @@ export default function Projects() {
         editing ? setIsEdting(true) : setIsCreating(true);
 
         try {
-            let thumbnailUrl = form.thumbnail_url; // keep existing url by default
+            let thumbnailUrl = form.thumbnail_url;
 
             if (imageFile) {
                 const fileExt = imageFile.name.split(".").pop();
                 const filePath = `thumbnails/${Date.now()}.${fileExt}`;
-
                 const { error: uploadError } = await supabase.storage
                     .from("project-images")
                     .upload(filePath, imageFile);
-
                 if (uploadError) throw new Error(uploadError.message);
-
                 const {
                     data: { publicUrl },
                 } = supabase.storage
                     .from("project-images")
                     .getPublicUrl(filePath);
-
                 thumbnailUrl = publicUrl;
             }
 
@@ -131,22 +125,19 @@ export default function Projects() {
                 repo_url: form.repo_url,
                 featured: form.featured,
                 thumbnail_url: thumbnailUrl,
+                sort_order: form.sort_order,
             };
 
             if (editing) {
-                // UPDATE existing project
                 const { error } = await supabase
                     .from("projects")
                     .update(payload)
                     .eq("id", editing.id);
-
                 if (error) throw new Error(error.message);
             } else {
-                // INSERT new project
                 const { error } = await supabase
                     .from("projects")
                     .insert(payload);
-
                 if (error) throw new Error(error.message);
             }
 
@@ -163,9 +154,7 @@ export default function Projects() {
 
     const handleDelete = async (id: string) => {
         setIsDeleting(true);
-
         const { error } = await supabase.from("projects").delete().eq("id", id);
-
         if (error) {
             throw new Error(error.message);
         } else {
@@ -173,15 +162,44 @@ export default function Projects() {
             setDeleteId(null);
             fetchProjects();
         }
+    };
 
-        // remove from local state so UI updates instantly
-        // setProjects((prev) => prev.filter((p) => p.id !== id));
-        // setDeleteId(null);
+    const moveUp = async (index: number) => {
+        if (index === 0) return;
+        const current = projects[index];
+        const above = projects[index - 1];
+        setReordering(current.id);
+        await supabase
+            .from("projects")
+            .update({ sort_order: above.sort_order })
+            .eq("id", current.id);
+        await supabase
+            .from("projects")
+            .update({ sort_order: current.sort_order })
+            .eq("id", above.id);
+        await fetchProjects();
+        setReordering(null);
+    };
+
+    const moveDown = async (index: number) => {
+        if (index === projects.length - 1) return;
+        const current = projects[index];
+        const below = projects[index + 1];
+        setReordering(current.id);
+        await supabase
+            .from("projects")
+            .update({ sort_order: below.sort_order })
+            .eq("id", current.id);
+        await supabase
+            .from("projects")
+            .update({ sort_order: current.sort_order })
+            .eq("id", below.id);
+        await fetchProjects();
+        setReordering(null);
     };
 
     const inputClass =
         "w-full bg-white/[0.04] border border-[#E8B84B]/15 focus:border-[#E8B84B]/50 text-white text-sm px-4 py-2.5 outline-none transition-colors placeholder-white/20";
-
     const labelClass =
         "block text-[11px] tracking-widest uppercase text-[#E8B84B]/60 mb-2";
 
@@ -192,7 +210,7 @@ export default function Projects() {
     return (
         <div className="min-h-screen text-white">
             {/* Header */}
-            <div className="border-b border-[#E8B84B]/10 flex items-center justify-between">
+            <div className="border-b border-[#E8B84B]/10 pb-5 mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">
                         Projects
@@ -204,25 +222,22 @@ export default function Projects() {
                 </div>
                 <button
                     onClick={openAdd}
-                    className="bg-[#E8394D] hover:bg-[#E8394D]/80 text-white text-[11px] font-medium tracking-widest uppercase px-5 py-2.5 transition-colors cursor-pointer"
+                    className="shrink-0 bg-[#E8394D] hover:bg-[#E8394D]/80 text-white text-[11px] font-medium tracking-widest uppercase px-4 sm:px-5 py-2.5 transition-colors cursor-pointer"
                 >
                     + New Project
                 </button>
             </div>
 
             {/* List */}
-            <div className="py-6 space-y-2">
+            <div className="space-y-2">
                 {isFetching ? (
-                    // Skeleton
                     Array.from({ length: 3 }).map((_, i) => (
                         <div
                             key={i}
-                            className="bg-[#0F0D2A] border border-[#E8B84B]/10 flex items-center gap-5 px-5 py-4 animate-pulse"
+                            className="bg-[#0F0D2A] border border-[#E8B84B]/10 flex items-center gap-4 px-4 py-4 animate-pulse"
                         >
-                            {/* Thumbnail skeleton */}
-                            <div className="shrink-0 w-24 h-16 bg-white/5" />
-
-                            {/* Info skeleton */}
+                            <div className="shrink-0 w-8 h-8 bg-white/5 rounded" />
+                            <div className="shrink-0 w-16 h-12 sm:w-24 sm:h-16 bg-white/5" />
                             <div className="flex-1 space-y-2">
                                 <div className="h-3 bg-white/8 rounded w-1/3" />
                                 <div className="h-2.5 bg-white/5 rounded w-2/3" />
@@ -231,12 +246,6 @@ export default function Projects() {
                                     <div className="h-4 w-16 bg-white/5 rounded" />
                                 </div>
                             </div>
-
-                            {/* Actions skeleton */}
-                            <div className="shrink-0 flex gap-2">
-                                <div className="h-7 w-12 bg-white/5 rounded" />
-                                <div className="h-7 w-14 bg-white/5 rounded" />
-                            </div>
                         </div>
                     ))
                 ) : projects.length === 0 ? (
@@ -244,14 +253,69 @@ export default function Projects() {
                         No projects yet. Add your first one.
                     </div>
                 ) : (
-                    projects.map((project) => (
+                    projects.map((project, index) => (
                         <div
                             key={project.id}
-                            className="bg-[#0F0D2A] border flex-wrap border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 justify-between flex items-center gap-5 px-5 py-4 group"
+                            className={`bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 group ${
+                                reordering === project.id ? "opacity-50" : ""
+                            }`}
                         >
-                            <div className="flex  gap-4 items-center w-full">
+                            <div className="flex items-center gap-4 px-4 py-4">
+                                {/* Order + arrows */}
+                                <div className="shrink-0 flex flex-col items-center gap-1">
+                                    <button
+                                        onClick={() => moveUp(index)}
+                                        disabled={index === 0 || !!reordering}
+                                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
+                                    >
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                        >
+                                            <path
+                                                d="M18 15L12 9L6 15"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
+                                    <span className="text-[10px] text-white/20 tabular-nums w-5 text-center">
+                                        {String(index + 1).padStart(2, "0")}
+                                    </span>
+                                    <button
+                                        onClick={() => moveDown(index)}
+                                        disabled={
+                                            index === projects.length - 1 ||
+                                            !!reordering
+                                        }
+                                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
+                                    >
+                                        <svg
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                        >
+                                            <path
+                                                d="M6 9L12 15L18 9"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="shrink-0 w-px h-10 bg-[#E8B84B]/10" />
+
                                 {/* Thumbnail */}
-                                <div className="shrink-0 w-24 h-16 bg-white/5 border border-white/5 overflow-hidden">
+                                <div className="shrink-0 w-16 h-12 sm:w-24 sm:h-16 bg-white/5 border border-white/5 overflow-hidden">
                                     {project.thumbnail_url ? (
                                         <img
                                             src={project.thumbnail_url}
@@ -277,32 +341,14 @@ export default function Projects() {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-[11px] text-white/35 truncate mb-2.5 leading-relaxed">
+                                    <p className="text-[11px] text-white/35 truncate leading-relaxed">
                                         {project.description ||
                                             "No description."}
                                     </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {project.tech_stack.map((t) => (
-                                            <span
-                                                key={t}
-                                                className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45"
-                                            >
-                                                {t}
-                                            </span>
-                                        ))}
-                                        <span
-                                            key={project.tag}
-                                            className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15"
-                                        >
-                                            {project.tag}
-                                        </span>
-                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-3 flex-col items-center">
-                                {/* Links */}
-                                <div className="shrink-0 sm:flex flex-col gap-4 items-end pr-2">
+                                {/* Links — desktop only */}
+                                <div className="shrink-0 hidden md:flex flex-col gap-1.5 items-end pr-2">
                                     {project.live_url && (
                                         <a
                                             href={project.live_url}
@@ -324,9 +370,46 @@ export default function Projects() {
                                         </a>
                                     )}
                                 </div>
+                            </div>
 
-                                {/* Actions — visible on hover */}
-                                <div className="shrink-0 flex gap-2 transition-opacity duration-150">
+                            {/* Bottom row — tags + actions */}
+                            <div className="flex items-center justify-between gap-3 px-4 pb-3 border-t border-white/5 pt-3">
+                                <div className="flex flex-wrap gap-1.5 min-w-0">
+                                    {(project.tech_stack ?? [])
+                                        .slice(0, 3)
+                                        .map((t) => (
+                                            <span
+                                                key={t}
+                                                className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45 shrink-0"
+                                            >
+                                                {t}
+                                            </span>
+                                        ))}
+                                    {(project.tech_stack ?? []).length > 3 && (
+                                        <span className="text-[10px] px-2 py-0.5 bg-white/5 text-white/25 shrink-0">
+                                            +
+                                            {(project.tech_stack ?? []).length -
+                                                3}
+                                        </span>
+                                    )}
+                                    {project.tag && (
+                                        <span className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15 shrink-0">
+                                            {project.tag}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="shrink-0 flex gap-2">
+                                    {project.live_url && (
+                                        <a
+                                            href={project.live_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="md:hidden text-[10px] tracking-widest uppercase text-[#E8B84B]/70 hover:text-[#E8B84B] transition-colors px-2 py-1.5 border border-[#E8B84B]/15"
+                                        >
+                                            Live ↗
+                                        </a>
+                                    )}
                                     <button
                                         onClick={() => openEdit(project)}
                                         className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-white/10 text-white/35 hover:border-[#E8B84B]/40 hover:text-[#E8B84B] transition-all cursor-pointer"
@@ -349,12 +432,11 @@ export default function Projects() {
             {/* Add / Edit Modal */}
             {showForm && (
                 <div
-                    className="fixed inset-0 bg-[#050414]/80 backdrop-blur-sm z-50 flex items-center justify-center p-5"
+                    className="fixed inset-0 bg-[#050414]/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-5"
                     onClick={(e) => e.target === e.currentTarget && closeForm()}
                 >
-                    <div className="bg-[#0F0D2A] border border-[#E8B84B]/20 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                        {/* Modal Header */}
-                        <div className="px-7 py-5 border-b border-[#E8B84B]/10 flex items-center justify-between">
+                    <div className="bg-[#0F0D2A] border border-[#E8B84B]/20 w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+                        <div className="px-5 sm:px-7 py-5 border-b border-[#E8B84B]/10 flex items-center justify-between sticky top-0 bg-[#0F0D2A] z-10">
                             <h2 className="text-base font-bold tracking-tight">
                                 {editing ? "Edit Project" : "New Project"}
                             </h2>
@@ -366,9 +448,10 @@ export default function Projects() {
                             </button>
                         </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleSubmit} className="p-7 space-y-5">
-                            {/* Title */}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="p-5 sm:p-7 space-y-5"
+                        >
                             <div>
                                 <label className={labelClass}>Title *</label>
                                 <input
@@ -385,7 +468,6 @@ export default function Projects() {
                                 />
                             </div>
 
-                            {/* Description */}
                             <div>
                                 <label className={labelClass}>
                                     Description
@@ -403,8 +485,7 @@ export default function Projects() {
                                 />
                             </div>
 
-                            {/* Tech Stack + tag */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>
                                         Tech Stack
@@ -422,23 +503,19 @@ export default function Projects() {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>tag</label>
+                                    <label className={labelClass}>Tag</label>
                                     <input
                                         className={inputClass}
                                         value={tagInput}
                                         onChange={(e) =>
                                             setTagInput(e.target.value)
                                         }
-                                        placeholder="freelance, personal"
+                                        placeholder="e.g. E-Commerce"
                                     />
-                                    <p className="text-[10px] text-white/20 mt-1.5">
-                                        comma separated
-                                    </p>
                                 </div>
                             </div>
 
-                            {/* URLs */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>
                                         Live URL
@@ -475,7 +552,6 @@ export default function Projects() {
                                 </div>
                             </div>
 
-                            {/* Image Upload */}
                             <div>
                                 <label className={labelClass}>Thumbnail</label>
                                 {imagePreview ? (
@@ -497,7 +573,7 @@ export default function Projects() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex flex-col items-center justify-center border border-dashed border-[#E8B84B]/25 hover:border-[#E8B84B]/50 hover:bg-[#E8B84B]/3 transition-all px-6 py-8 cursor-pointer">
+                                    <label className="flex flex-col items-center justify-center border border-dashed border-[#E8B84B]/25 hover:border-[#E8B84B]/50 transition-all px-6 py-8 cursor-pointer">
                                         <span className="text-[11px] tracking-widest uppercase text-white/25">
                                             Click to upload image
                                         </span>
@@ -514,7 +590,6 @@ export default function Projects() {
                                 )}
                             </div>
 
-                            {/* Featured */}
                             <label className="flex items-center gap-3 cursor-pointer">
                                 <input
                                     type="checkbox"
@@ -532,11 +607,10 @@ export default function Projects() {
                                 </span>
                             </label>
 
-                            {/* Actions */}
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-[#E8394D] hover:bg-[#E8394D]/80 text-white text-[11px] tracking-widest uppercase py-3 transition-colors cursor-pointer font-medium"
+                                    className="flex-1 bg-[#E8394D] hover:bg-[#E8394D]/80 text-white text-[11px] tracking-widest uppercase py-3 transition-colors cursor-pointer font-medium flex items-center justify-center"
                                 >
                                     {editing ? (
                                         isEditing ? (
@@ -587,7 +661,7 @@ export default function Projects() {
                         <div className="flex gap-3 justify-center">
                             <button
                                 onClick={() => handleDelete(deleteId)}
-                                className="px-7 py-2.5 text-[11px] tracking-widest uppercase border border-[#E8394D]/40 text-[#E8394D] hover:bg-[#E8394D]/10 hover:border-[#E8394D] transition-all cursor-pointer"
+                                className="px-7 py-2.5 text-[11px] tracking-widest uppercase border border-[#E8394D]/40 text-[#E8394D] hover:bg-[#E8394D]/10 hover:border-[#E8394D] transition-all cursor-pointer flex items-center justify-center min-w-20"
                             >
                                 {isDeleting ? (
                                     <Cardio

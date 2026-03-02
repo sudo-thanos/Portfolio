@@ -9,15 +9,18 @@ import Image from "next/image";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-interface ProjectTypes {
-    id: number;
-    name: string;
-    image: string;
-    category: string;
+interface Project {
+    id: string;
+    title: string;
     description: string;
-    technologies: string[];
-    projectUrl: string;
+    tech_stack: string[];
+    tag: string;
+    live_url: string;
+    repo_url: string;
+    featured: boolean;
+    thumbnail_url: string;
 }
 
 export default function Projects() {
@@ -28,39 +31,20 @@ export default function Projects() {
     const [canScrollPrev, setCanScrollPrev] = useState(false);
     const [canScrollNext, setCanScrollNext] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [projects, setProjects] = useState<Project[]>([]);
 
-    const projects: ProjectTypes[] = [
-        {
-            id: 1,
-            name: "Klancy Design Essentials",
-            image: "/images/project3.png",
-            category: "E-Commerce",
-            description:
-                "A modern e-commerce platform designed for hair beauty essentials. Features high-quality product galleries, detailed specifications, customer reviews, and an intuitive shopping experience that helps customers make confident purchasing decisions, and a fully working dashboard to manage the website.",
-            technologies: ["Next.js", "TailwindCSS", "Python"],
-            projectUrl: "https://klancy.netlify.app",
-        },
-        {
-            id: 2,
-            name: "AsteriskRD Website",
-            image: "/images/project1.png",
-            category: "Web-App",
-            description:
-                "An AI-powered analytics dashboard that delivers real-time insights from complex data streams. Features intelligent data prioritization, custom visualization widgets, and predictive analytics that adapt to user behavior patterns for enhanced decision-making.",
-            technologies: ["Next.js", "TailwindCSS", "Real-time", "Data Viz"],
-            projectUrl: "https://asteriskrd.tech",
-        },
-        {
-            id: 3,
-            name: "Avantlush",
-            image: "/images/project2.png",
-            category: "E-commerce",
-            description:
-                "A modern e-commerce platform designed specifically for furniture retail. Features high-quality product galleries, detailed specifications, customer reviews, and an intuitive shopping experience that helps customers make confident purchasing decisions.",
-            technologies: ["ReactJS", "TailwindCSS", "E-Commerce"],
-            projectUrl: "#",
-        },
-    ];
+    const fetchProducts = async () => {
+        const { data, error } = await supabase
+            .from("projects")
+            .select("*")
+            .order("sort_order", { ascending: true });
+
+        if (error) throw new Error(error.message);
+
+        console.log(data);
+
+        setProjects(data);
+    };
 
     const scrollPrev = useCallback(() => {
         if (emblaApi) emblaApi.scrollPrev();
@@ -91,120 +75,9 @@ export default function Projects() {
         emblaApi.on("reInit", onSelect);
     }, [emblaApi, onSelect]);
 
-    const ProjectCard = ({ project }: { project: ProjectTypes }) => {
-        const {
-            id,
-            name,
-            category,
-            image,
-            description,
-            technologies,
-            projectUrl,
-        } = project;
-
-        return (
-            <div
-                key={id}
-                className="group bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/30 transition-all duration-300 flex flex-col h-full"
-            >
-                {/* Image */}
-                <div className="relative w-full overflow-hidden">
-                    <Image
-                        src={image}
-                        width={1448}
-                        height={1448}
-                        alt={`${name} project`}
-                        className="h-52 sm:h-60 md:h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-linear-to-t from-[#0F0D2A]/80 via-transparent to-transparent" />
-
-                    {/* Category + Link */}
-                    <div className="absolute top-4 flex w-full items-center justify-between px-5">
-                        <span className="text-[10px] tracking-widest uppercase px-3 py-1 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/25">
-                            {category}
-                        </span>
-                        <Link
-                            href={projectUrl}
-                            target="_blank"
-                            className="flex h-8 w-8 items-center justify-center border border-white/15 bg-black/40 hover:border-[#E8B84B]/50 hover:bg-[#E8B84B]/10 transition-all duration-300 backdrop-blur-sm"
-                        >
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                className="text-white/60 group-hover:text-[#E8B84B] transition-colors"
-                            >
-                                <path
-                                    d="M20 44L44 20M44 20H24M44 20V40"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                                <path
-                                    d="M7 17L17 7M17 7H9M17 7V15"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-col flex-1 px-6 py-6 space-y-5">
-                    <h3 className="text-lg font-bold text-white tracking-tight leading-snug">
-                        {name}
-                    </h3>
-
-                    {/* Description */}
-                    <div>
-                        <p className="text-[10px] tracking-widest uppercase text-[#E8B84B]/50 mb-2">
-                            Description
-                        </p>
-                        <p className="text-sm text-white/45 leading-relaxed">
-                            {description}
-                        </p>
-                    </div>
-
-                    {/* Tech stack */}
-                    <div>
-                        <p className="text-[10px] tracking-widest uppercase text-white/30 mb-2.5">
-                            Stack
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {technologies.map((tech, index) => (
-                                <span
-                                    key={index}
-                                    className="text-[10px] px-2.5 py-1 bg-white/5 text-white/45 border border-white/8 tracking-wider"
-                                >
-                                    {tech}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Visit link */}
-                    <div className="pt-2 mt-auto">
-                        <Link
-                            href={projectUrl}
-                            target="_blank"
-                            className="inline-flex items-center gap-2 text-[11px] tracking-widest uppercase text-[#E8B84B]/60 hover:text-[#E8B84B] transition-colors group/link"
-                        >
-                            View Project
-                            <span className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform inline-block">
-                                ↗
-                            </span>
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
     return (
         <section className="w-full text-white max-w-6xl mt-16 md:mt-24 pb-16 md:pb-24 mx-auto px-4 sm:px-6 md:px-8">
@@ -306,3 +179,123 @@ export default function Projects() {
         </section>
     );
 }
+
+const ProjectCard = ({ project }: { project: Project }) => {
+    // const { id, name, category, image, description, technologies, projectUrl } =
+    //     project;
+
+    const {
+        id,
+        title,
+        description,
+        tech_stack,
+        tag,
+        live_url,
+        repo_url,
+        featured,
+        thumbnail_url,
+    } = project;
+
+    return (
+        <div
+            key={id}
+            className="group bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/30 transition-all duration-300 flex flex-col h-full"
+        >
+            {/* Image */}
+            <div className="relative w-full overflow-hidden">
+                <Image
+                    src={thumbnail_url}
+                    width={1448}
+                    height={1448}
+                    alt={`${title} project`}
+                    className="h-52 sm:h-60 md:h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {/* Overlay gradient */}
+                <div className="absolute inset-0 bg-linear-to-t from-[#0F0D2A]/80 via-transparent to-transparent" />
+
+                {/* Category + Link */}
+                <div className="absolute top-4 flex w-full items-center justify-between px-5">
+                    <span className="text-[10px] tracking-widest uppercase px-3 py-1 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/25">
+                        {tag}
+                    </span>
+                    <Link
+                        href={live_url}
+                        target="_blank"
+                        className="flex h-8 w-8 items-center justify-center border border-white/15 bg-black/40 hover:border-[#E8B84B]/50 hover:bg-[#E8B84B]/10 transition-all duration-300 backdrop-blur-sm"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className="text-white/60 group-hover:text-[#E8B84B] transition-colors"
+                        >
+                            <path
+                                d="M20 44L44 20M44 20H24M44 20V40"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M7 17L17 7M17 7H9M17 7V15"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </Link>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col flex-1 px-6 py-6 space-y-5">
+                <h3 className="text-lg font-bold text-white tracking-tight leading-snug">
+                    {title}
+                </h3>
+
+                {/* Description */}
+                <div>
+                    <p className="text-[10px] tracking-widest uppercase text-[#E8B84B]/50 mb-2">
+                        Description
+                    </p>
+                    <p className="text-sm text-white/45 leading-relaxed">
+                        {description}
+                    </p>
+                </div>
+
+                {/* Tech stack */}
+                <div>
+                    <p className="text-[10px] tracking-widest uppercase text-white/30 mb-2.5">
+                        Stack
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {tech_stack.map((tech, index) => (
+                            <span
+                                key={index}
+                                className="text-[10px] px-2.5 py-1 bg-white/5 text-white/45 border border-white/8 tracking-wider"
+                            >
+                                {tech}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Visit link */}
+                <div className="pt-2 mt-auto">
+                    <Link
+                        href={live_url}
+                        target="_blank"
+                        className="inline-flex items-center gap-2 text-[11px] tracking-widest uppercase text-[#E8B84B]/60 hover:text-[#E8B84B] transition-colors group/link"
+                    >
+                        View Project
+                        <span className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform inline-block">
+                            ↗
+                        </span>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+};
