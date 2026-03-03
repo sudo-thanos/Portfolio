@@ -15,68 +15,6 @@ interface WorkExperience {
     description: string[];
 }
 
-// const workHistory: WorkExperience[] = [
-//     {
-//         id: 1,
-//         role: "Lead Frontend Developer",
-//         company: "AsteriskRD",
-//         location: "Canada (Remote)",
-//         type: "Internship",
-//         period: "Feb 2024 - May 2024",
-//         description: [
-//             "Led frontend development initiatives for the company website from inception to deployment.",
-//             "Optimized website performance, resulting in improved load times and user experience.",
-//             "Established frontend architecture and coding standards for the development team.",
-//             "Collaborated with designers and backend developers to deliver seamless user interfaces.",
-//             "Mentored junior developers and conducted code reviews to maintain quality standards.",
-//         ],
-//     },
-//     {
-//         id: 2,
-//         role: "DevOps Engineer",
-//         company: "Hasob Integrated Services",
-//         location: "Nigeria",
-//         type: "Full-Time",
-//         period: "Feb 2025 - Present",
-//         description: [
-//             "Manage and maintain company servers and applications across local and cloud infrastructure.",
-//             "Deploy and orchestrate containerized applications using Kubernetes clusters.",
-//             "Implement CI/CD pipelines to streamline deployment processes and improve system reliability.",
-//             "Monitor system performance and optimize infrastructure for scalability and security.",
-//             "Collaborate with development teams to ensure smooth application deployment and operations.",
-//         ],
-//     },
-//     {
-//         id: 3,
-//         role: "Frontend Developer & Community Manager",
-//         company: "AsteriskRD",
-//         location: "Canada (Remote)",
-//         type: "Volunteer",
-//         period: "Aug 2025 - Present",
-//         description: [
-//             "Develop and maintain frontend features for company projects using modern web technologies.",
-//             "Mentor interns and junior developers, providing guidance on best practices and technical skills.",
-//             "Manage developer community initiatives, fostering collaboration and knowledge sharing.",
-//             "Coordinate onboarding processes and create learning resources for new team members.",
-//         ],
-//     },
-//     {
-//         id: 4,
-//         role: "Frontend Developer",
-//         company: "Winter Developers",
-//         location: "Nigeria",
-//         type: "Contract",
-//         period: "Sept 2024 - Jan 2025",
-//         description: [
-//             "Collaborated in a 5-person development team to build a custom e-commerce platform for men's fashion retail.",
-//             "Developed responsive product pages, shopping cart functionality, and checkout processes.",
-//             "Implemented user authentication and account management features.",
-//             "Ensured cross-browser compatibility and mobile responsiveness across the application.",
-//             "Worked closely with the client to gather requirements and deliver solutions that met business objectives.",
-//         ],
-//     },
-// ];
-
 const typeColors: Record<string, string> = {
     "Full-Time": "bg-[#E8B84B]/10 text-[#E8B84B] border-[#E8B84B]/20",
     Internship: "bg-white/5 text-white/40 border-white/10",
