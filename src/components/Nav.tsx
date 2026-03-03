@@ -63,9 +63,9 @@ export default function Navigation() {
                         );
                     })}
                     <section className="flex items-center gap-6">
-                        <Link href="https://x.com/ChumaUdechukwu">
+                        <Link href="https://github.com/sudo-thanos">
                             <Image
-                                src="/icons/x.svg"
+                                src="/icons/github.svg"
                                 width={32}
                                 height={32}
                                 alt="Social Icon"
