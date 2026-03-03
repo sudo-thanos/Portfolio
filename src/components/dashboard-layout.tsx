@@ -14,6 +14,7 @@ import {
     FolderClock,
     FileUser,
     Terminal,
+    Rss,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,12 @@ const navItems = [
         icon: Terminal,
         label: "Technical Skills",
         href: "/dashboard/technical-skills",
+        disabled: false,
+    },
+    {
+        icon: Rss,
+        label: "Social Links",
+        href: "/dashboard/social-links",
         disabled: false,
     },
     { icon: Search, label: "SEO Settings", href: "#", disabled: true },
