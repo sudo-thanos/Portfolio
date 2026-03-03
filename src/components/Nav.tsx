@@ -148,9 +148,9 @@ export default function Navigation() {
 
                         {/* Mobile Social Icons */}
                         <section className="flex items-center gap-6 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <Link href="https://x.com/ChumaUdechukwu">
+                            <Link href="https://github.com/sudo-thanos">
                                 <Image
-                                    src="/icons/x.svg"
+                                    src="/icons/github.svg"
                                     width={32}
                                     height={32}
                                     alt="Social Icon"
