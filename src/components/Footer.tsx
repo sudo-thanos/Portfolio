@@ -1,12 +1,33 @@
 /**
  * Footer component
  */
+"use client";
+
 // import StackScroll from "./StackScroll";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Footer() {
     const currentDate = new Date();
     const year = currentDate.getFullYear();
+    const [hitCount, setHitCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        supabase
+            .rpc("get_hit_totals")
+            .then(({ data }: { data: { total?: number } | null }) => {
+                if (!cancelled && typeof data?.total === "number") {
+                    setHitCount(data.total);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     return (
         <>
@@ -24,9 +45,11 @@ export default function Footer() {
                             </p>
                         </div>
                         <div className="flex items-center gap-4 md:gap-[1.5rem]">
-                            {/* <p className="font-medium text-sm sm:text-base md:text-[1rem] cursor-pointer hover:text-accent transition-colors">
-                                Uses
-                            </p> */}
+                            {hitCount !== null && (
+                                <span className="text-xs sm:text-sm md:text-[.9rem] text-secondary">
+                                    {hitCount.toLocaleString()} hits
+                                </span>
+                            )}
                             <Link
                                 href="/resume"
                                 className="font-medium text-sm sm:text-base md:text-[1rem] cursor-pointer hover:text-accent transition-colors"

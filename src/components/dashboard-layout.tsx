@@ -15,6 +15,7 @@ import {
     FileUser,
     Terminal,
     Rss,
+    Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,12 @@ const navItems = [
         icon: House,
         label: "Overview",
         href: "/dashboard",
+        disabled: false,
+    },
+    {
+        icon: Activity,
+        label: "Analytics",
+        href: "/dashboard/analytics",
         disabled: false,
     },
     {
