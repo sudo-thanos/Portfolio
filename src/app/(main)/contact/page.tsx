@@ -2,17 +2,40 @@
  * Contact page
  */
 
+import type { Metadata } from "next";
 import { SquigglyLine } from "@/components/SquigglyLine";
 import Link from "next/link";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { ogImages } from "@/lib/site";
+
+export const metadata: Metadata = {
+    title: "Contact",
+    description:
+        "Get in touch with Daniel Udechukwu, a full-stack engineer in Abuja, Nigeria, about freelance work, roles or collaboration.",
+    alternates: { canonical: "/contact" },
+    openGraph: {
+        title: "Contact — Daniel Udechukwu",
+        description: "Get in touch about freelance work, roles or collaboration.",
+        url: "/contact",
+        type: "website",
+        images: ogImages,
+    },
+};
 
 export default function Contact() {
     return (
         <>
+            <BreadcrumbJsonLd
+                items={[
+                    { name: "Home", path: "/" },
+                    { name: "Contact", path: "/contact" },
+                ]}
+            />
             <section className="w-[90%] px-4 text-base md:text-[1.3rem] max-w-6xl mt-48 pb-16 mx-auto">
                 <div>
-                    <h2 className="text-3xl md:text-[2.5rem] font-bold">
+                    <h1 className="text-3xl md:text-[2.5rem] font-bold">
                         Get in touch
-                    </h2>
+                    </h1>
                     <p className="text-md text-white/50 mt-3 max-w-xl leading-relaxed">
                         {"Do you have an exciting project? Let's talk!"}
                     </p>

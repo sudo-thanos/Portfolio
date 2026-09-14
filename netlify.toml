@@ -1,0 +1,14 @@
+# Netlify configuration.
+#
+# The site talks to Supabase directly from both the server (Server Components,
+# sitemap, metadata) and the browser (the dashboard), so there is no backend to
+# proxy and no /api/* rewrite here. Supabase sets permissive CORS headers on its
+# REST endpoint, and auth uses a bearer token rather than a cookie, so none of
+# the first-party-cookie gymnastics a separate API origin would need applies.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

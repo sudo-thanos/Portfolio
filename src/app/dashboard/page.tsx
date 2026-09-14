@@ -1,7 +1,12 @@
 "use client";
 
 import { FileText, Rocket, TrendingUp, BookOpen } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    listProjects,
+    listResumes,
+    listSkills,
+    listWorkHistory,
+} from "@/lib/db";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -15,23 +20,18 @@ export default function LabOverviewPage() {
 
     const fetchMetrics = async () => {
         try {
-            const [
-                { data: projects },
-                { data: skillsData },
-                { data: workData },
-                { data: resumeData },
-            ] = await Promise.all([
-                supabase.from("projects").select("id"),
-                supabase.from("skills").select("id"),
-                supabase.from("work_history").select("id"),
-                supabase.from("resumes").select("id"),
+            const [projects, skills, work, resumes] = await Promise.all([
+                listProjects(),
+                listSkills(),
+                listWorkHistory(),
+                listResumes(),
             ]);
 
             setCounts({
-                projects: projects?.length ?? 0,
-                skills: skillsData?.length ?? 0,
-                workHistory: workData?.length ?? 0,
-                resumes: resumeData?.length ?? 0,
+                projects: projects.length,
+                skills: skills.length,
+                workHistory: work.length,
+                resumes: resumes.length,
             });
         } catch (error) {
             console.error(error);

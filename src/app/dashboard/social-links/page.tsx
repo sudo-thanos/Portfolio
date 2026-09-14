@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    createSocialLink,
+    deleteSocialLink,
+    listSocialLinks,
+    reorderSocialLinks,
+    updateSocialLink,
+} from "@/lib/db";
 
 interface SocialLink {
     id: string;
@@ -45,12 +51,11 @@ export default function SocialLinksPage() {
 
     const fetchLinks = async () => {
         setIsFetching(true);
-        const { data, error } = await supabase
-            .from("social_links")
-            .select("*")
-            .order("sort_order", { ascending: true });
-        if (error) console.error(error);
-        else setLinks(data ?? []);
+        try {
+            setLinks(await listSocialLinks());
+        } catch (err) {
+            console.error(err);
+        }
         setIsFetching(false);
     };
 
@@ -97,16 +102,9 @@ export default function SocialLinksPage() {
         setIsSubmitting(true);
         try {
             if (editing) {
-                const { error } = await supabase
-                    .from("social_links")
-                    .update(form)
-                    .eq("id", editing.id);
-                if (error) throw new Error(error.message);
+                await updateSocialLink(editing.id, form);
             } else {
-                const { error } = await supabase
-                    .from("social_links")
-                    .insert(form);
-                if (error) throw new Error(error.message);
+                await createSocialLink(form);
             }
             await fetchLinks();
             closeForm();
@@ -119,51 +117,35 @@ export default function SocialLinksPage() {
 
     const handleDelete = async (id: string) => {
         setIsDeleting(true);
-        const { error } = await supabase
-            .from("social_links")
-            .delete()
-            .eq("id", id);
-        if (error) console.error(error);
-        else {
+        try {
+            await deleteSocialLink(id);
             await fetchLinks();
             setDeleteId(null);
+        } catch (err) {
+            console.error(err);
         }
         setIsDeleting(false);
     };
 
-    const moveUp = async (index: number) => {
-        if (index === 0) return;
-        const current = links[index];
-        const above = links[index - 1];
-        setReordering(current.id);
-        await supabase
-            .from("social_links")
-            .update({ sort_order: above.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("social_links")
-            .update({ sort_order: current.sort_order })
-            .eq("id", above.id);
-        await fetchLinks();
+    // One reorder call that writes only the rows whose position changed,
+    // instead of two racing per-row writes.
+    const move = async (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= links.length) return;
+        const next = [...links];
+        [next[index], next[target]] = [next[target], next[index]];
+        setReordering(links[index].id);
+        try {
+            await reorderSocialLinks(next.map((l) => l.id));
+            await fetchLinks();
+        } catch (err) {
+            console.error(err);
+        }
         setReordering(null);
     };
 
-    const moveDown = async (index: number) => {
-        if (index === links.length - 1) return;
-        const current = links[index];
-        const below = links[index + 1];
-        setReordering(current.id);
-        await supabase
-            .from("social_links")
-            .update({ sort_order: below.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("social_links")
-            .update({ sort_order: current.sort_order })
-            .eq("id", below.id);
-        await fetchLinks();
-        setReordering(null);
-    };
+    const moveUp = (index: number) => move(index, -1);
+    const moveDown = (index: number) => move(index, 1);
 
     return (
         <div className="min-h-screen text-white">

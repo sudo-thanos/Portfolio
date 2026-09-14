@@ -2,14 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Radio, BarChart3, CalendarClock } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-
-type Hit = {
-    id: number;
-    type: "visit" | "ping";
-    path: string | null;
-    created_at: string;
-};
+import { getHitTotals, getRecentHits } from "@/lib/db";
+import type { SiteHit } from "@/lib/types";
 
 const VISIT_COLOR = "#3987e5";
 const PING_COLOR = "#c98500";
@@ -40,37 +34,29 @@ function buildDayBuckets() {
 }
 
 export default function AnalyticsPage() {
-    const [hits, setHits] = useState<Hit[]>([]);
+    const [hits, setHits] = useState<SiteHit[]>([]);
     const [totals, setTotals] = useState({ visits: 0, pings: 0 });
     const [loading, setLoading] = useState(true);
     const [hovered, setHovered] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
-            const since = new Date();
-            since.setUTCDate(since.getUTCDate() - (DAYS_SHOWN - 1));
-            since.setUTCHours(0, 0, 0, 0);
-
-            const [{ count: visitCount }, { count: pingCount }, { data: recent }] =
-                await Promise.all([
-                    supabase
-                        .from("site_hits")
-                        .select("id", { count: "exact", head: true })
-                        .eq("type", "visit"),
-                    supabase
-                        .from("site_hits")
-                        .select("id", { count: "exact", head: true })
-                        .eq("type", "ping"),
-                    supabase
-                        .from("site_hits")
-                        .select("id, type, path, created_at")
-                        .gte("created_at", since.toISOString())
-                        .order("created_at", { ascending: false })
-                        .limit(500),
+            try {
+                // Totals are aggregated in the database; only the windowed
+                // rows the chart actually plots come back over the wire.
+                const [totalsData, recent] = await Promise.all([
+                    getHitTotals(),
+                    getRecentHits(DAYS_SHOWN, 500),
                 ]);
 
-            setTotals({ visits: visitCount ?? 0, pings: pingCount ?? 0 });
-            setHits((recent as Hit[]) ?? []);
+                setTotals({
+                    visits: totalsData.visits,
+                    pings: totalsData.pings,
+                });
+                setHits(recent);
+            } catch (err) {
+                console.error(err);
+            }
             setLoading(false);
         };
 

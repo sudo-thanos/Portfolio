@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    createSkill,
+    deleteSkill,
+    listSkills,
+    reorderSkills,
+    updateSkill,
+} from "@/lib/db";
 
 interface Skill {
     id: string;
@@ -35,12 +41,11 @@ export default function SkillsPage() {
 
     const fetchSkills = async () => {
         setIsFetching(true);
-        const { data, error } = await supabase
-            .from("skills")
-            .select("*")
-            .order("sort_order", { ascending: true });
-        if (error) console.error(error);
-        else setSkills(data ?? []);
+        try {
+            setSkills(await listSkills());
+        } catch (err) {
+            console.error(err);
+        }
         setIsFetching(false);
     };
 
@@ -75,14 +80,9 @@ export default function SkillsPage() {
 
         try {
             if (editing) {
-                const { error } = await supabase
-                    .from("skills")
-                    .update(form)
-                    .eq("id", editing.id);
-                if (error) throw new Error(error.message);
+                await updateSkill(editing.id, form);
             } else {
-                const { error } = await supabase.from("skills").insert(form);
-                if (error) throw new Error(error.message);
+                await createSkill(form);
             }
             await fetchSkills();
             closeForm();
@@ -95,48 +95,35 @@ export default function SkillsPage() {
 
     const handleDelete = async (id: string) => {
         setIsDeleting(true);
-        const { error } = await supabase.from("skills").delete().eq("id", id);
-        if (error) console.error(error);
-        else {
+        try {
+            await deleteSkill(id);
             await fetchSkills();
             setDeleteId(null);
+        } catch (err) {
+            console.error(err);
         }
         setIsDeleting(false);
     };
 
-    const moveUp = async (index: number) => {
-        if (index === 0) return;
-        const current = skills[index];
-        const above = skills[index - 1];
-        setReordering(current.id);
-        await supabase
-            .from("skills")
-            .update({ sort_order: above.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("skills")
-            .update({ sort_order: current.sort_order })
-            .eq("id", above.id);
-        await fetchSkills();
+    // One reorder call that writes only the rows whose position changed,
+    // instead of two racing per-row writes.
+    const move = async (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= skills.length) return;
+        const next = [...skills];
+        [next[index], next[target]] = [next[target], next[index]];
+        setReordering(skills[index].id);
+        try {
+            await reorderSkills(next.map((s) => s.id));
+            await fetchSkills();
+        } catch (err) {
+            console.error(err);
+        }
         setReordering(null);
     };
 
-    const moveDown = async (index: number) => {
-        if (index === skills.length - 1) return;
-        const current = skills[index];
-        const below = skills[index + 1];
-        setReordering(current.id);
-        await supabase
-            .from("skills")
-            .update({ sort_order: below.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("skills")
-            .update({ sort_order: current.sort_order })
-            .eq("id", below.id);
-        await fetchSkills();
-        setReordering(null);
-    };
+    const moveUp = (index: number) => move(index, -1);
+    const moveDown = (index: number) => move(index, 1);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {

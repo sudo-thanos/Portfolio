@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useMemo, useState } from "react";
+import {
+    createProject,
+    deleteProject,
+    listProjects,
+    reorderProjects,
+    updateProject,
+    uploadProjectImage,
+    type ProjectInput,
+} from "@/lib/db";
+import {
+    PROJECT_TYPES,
+    PROJECT_TYPE_META,
+    projectTypeOf,
+    type Project,
+} from "@/lib/types";
 import { Cardio } from "ldrs/react";
 import "ldrs/react/Cardio.css";
 
-interface Project {
-    id: string;
-    title: string;
-    description: string;
-    tech_stack: string[];
-    tag: string;
-    live_url: string;
-    repo_url: string;
-    featured: boolean;
-    thumbnail_url: string;
-    sort_order: number;
-}
-
-const empty: Omit<Project, "id"> = {
+const empty: ProjectInput = {
     title: "",
     description: "",
     tech_stack: [],
     tag: "",
+    project_type: "client",
     live_url: "",
     repo_url: "",
     featured: false,
@@ -59,7 +61,7 @@ export default function Projects() {
 
     const openEdit = (project: Project) => {
         setEditing(project);
-        setForm({ ...project });
+        setForm({ ...project, project_type: projectTypeOf(project) });
         setImagePreview(project.thumbnail_url);
         setTechInput((project.tech_stack ?? []).join(", "));
         setTagInput(project.tag ?? "");
@@ -81,12 +83,11 @@ export default function Projects() {
 
     const fetchProjects = async () => {
         setIsFetching(true);
-        const { data, error } = await supabase
-            .from("projects")
-            .select("*")
-            .order("sort_order", { ascending: true });
-        if (error) throw new Error(error.message);
-        setProjects(data);
+        try {
+            setProjects(await listProjects());
+        } catch (err) {
+            console.error(err);
+        }
         setIsFetching(false);
     };
 
@@ -99,21 +100,11 @@ export default function Projects() {
             let thumbnailUrl = form.thumbnail_url;
 
             if (imageFile) {
-                const fileExt = imageFile.name.split(".").pop();
-                const filePath = `thumbnails/${Date.now()}.${fileExt}`;
-                const { error: uploadError } = await supabase.storage
-                    .from("project-images")
-                    .upload(filePath, imageFile);
-                if (uploadError) throw new Error(uploadError.message);
-                const {
-                    data: { publicUrl },
-                } = supabase.storage
-                    .from("project-images")
-                    .getPublicUrl(filePath);
-                thumbnailUrl = publicUrl;
+                const { url } = await uploadProjectImage(imageFile);
+                thumbnailUrl = url;
             }
 
-            const payload = {
+            const payload: ProjectInput = {
                 title: form.title,
                 description: form.description,
                 tech_stack: techInput
@@ -121,6 +112,7 @@ export default function Projects() {
                     .map((s) => s.trim())
                     .filter(Boolean),
                 tag: tagInput,
+                project_type: form.project_type,
                 live_url: form.live_url,
                 repo_url: form.repo_url,
                 featured: form.featured,
@@ -129,19 +121,12 @@ export default function Projects() {
             };
 
             if (editing) {
-                const { error } = await supabase
-                    .from("projects")
-                    .update(payload)
-                    .eq("id", editing.id);
-                if (error) throw new Error(error.message);
+                await updateProject(editing.id, payload);
             } else {
-                const { error } = await supabase
-                    .from("projects")
-                    .insert(payload);
-                if (error) throw new Error(error.message);
+                await createProject(payload);
             }
 
-            fetchProjects();
+            await fetchProjects();
             closeForm();
         } catch (err) {
             console.error(err);
@@ -153,48 +138,60 @@ export default function Projects() {
     };
 
     const handleDelete = async (id: string) => {
+        const project = projects.find((p) => p.id === id);
+        if (!project) return;
+
         setIsDeleting(true);
-        const { error } = await supabase.from("projects").delete().eq("id", id);
-        if (error) {
-            throw new Error(error.message);
-        } else {
-            setIsDeleting(false);
+        try {
+            await deleteProject(project);
             setDeleteId(null);
-            fetchProjects();
+            await fetchProjects();
+        } catch (err) {
+            console.error(err);
         }
+        setIsDeleting(false);
     };
 
-    const moveUp = async (index: number) => {
-        if (index === 0) return;
-        const current = projects[index];
-        const above = projects[index - 1];
-        setReordering(current.id);
-        await supabase
-            .from("projects")
-            .update({ sort_order: above.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("projects")
-            .update({ sort_order: current.sort_order })
-            .eq("id", above.id);
-        await fetchProjects();
-        setReordering(null);
-    };
+    // Projects are stored in one flat, globally-ordered list but shown in two
+    // sections, so ordering has to be per-section: a project can only move past
+    // its neighbours of the same kind.
+    const sections = useMemo(
+        () =>
+            PROJECT_TYPES.map((type) => ({
+                type,
+                meta: PROJECT_TYPE_META[type],
+                items: projects.filter((p) => projectTypeOf(p) === type),
+            })),
+        [projects],
+    );
 
-    const moveDown = async (index: number) => {
-        if (index === projects.length - 1) return;
-        const current = projects[index];
-        const below = projects[index + 1];
-        setReordering(current.id);
-        await supabase
-            .from("projects")
-            .update({ sort_order: below.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("projects")
-            .update({ sort_order: current.sort_order })
-            .eq("id", below.id);
-        await fetchProjects();
+    // One reorder call that writes only the rows whose position changed,
+    // instead of two racing per-row writes.
+    const move = async (group: Project[], index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= group.length) return;
+
+        const shuffled = [...group];
+        [shuffled[index], shuffled[target]] = [
+            shuffled[target],
+            shuffled[index],
+        ];
+
+        // Slot the section's new order back into the slots it already occupies
+        // in the full list, leaving every other section's rows untouched.
+        const queue = shuffled.map((p) => p.id);
+        const inGroup = new Set(group.map((p) => p.id));
+        const ids = projects.map((p) =>
+            inGroup.has(p.id) ? queue.shift()! : p.id,
+        );
+
+        setReordering(group[index].id);
+        try {
+            await reorderProjects(ids);
+            await fetchProjects();
+        } catch (err) {
+            console.error(err);
+        }
         setReordering(null);
     };
 
@@ -218,6 +215,17 @@ export default function Projects() {
                     <p className="text-[11px] text-white/30 mt-1 tracking-widest uppercase">
                         {projects.length} project
                         {projects.length !== 1 ? "s" : ""}
+                        {projects.length > 0 && (
+                            <span className="text-white/20">
+                                {" · "}
+                                {sections
+                                    .map(
+                                        ({ meta, items }) =>
+                                            `${items.length} ${meta.label}`,
+                                    )
+                                    .join(" · ")}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <button
@@ -228,10 +236,10 @@ export default function Projects() {
                 </button>
             </div>
 
-            {/* List */}
-            <div className="space-y-2">
-                {isFetching ? (
-                    Array.from({ length: 3 }).map((_, i) => (
+            {/* List — one section per project kind */}
+            {isFetching ? (
+                <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
                         <div
                             key={i}
                             className="bg-[#0F0D2A] border border-[#E8B84B]/10 flex items-center gap-4 px-4 py-4 animate-pulse"
@@ -247,187 +255,58 @@ export default function Projects() {
                                 </div>
                             </div>
                         </div>
-                    ))
-                ) : projects.length === 0 ? (
-                    <div className="text-center py-24 text-white/20 text-xs tracking-widest uppercase">
-                        No projects yet. Add your first one.
-                    </div>
-                ) : (
-                    projects.map((project, index) => (
-                        <div
-                            key={project.id}
-                            className={`bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 group ${
-                                reordering === project.id ? "opacity-50" : ""
-                            }`}
-                        >
-                            <div className="flex items-center gap-4 px-4 py-4">
-                                {/* Order + arrows */}
-                                <div className="shrink-0 flex flex-col items-center gap-1">
-                                    <button
-                                        onClick={() => moveUp(index)}
-                                        disabled={index === 0 || !!reordering}
-                                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
-                                    >
-                                        <svg
-                                            width="12"
-                                            height="12"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                        >
-                                            <path
-                                                d="M18 15L12 9L6 15"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    </button>
-                                    <span className="text-[10px] text-white/20 tabular-nums w-5 text-center">
-                                        {String(index + 1).padStart(2, "0")}
-                                    </span>
-                                    <button
-                                        onClick={() => moveDown(index)}
-                                        disabled={
-                                            index === projects.length - 1 ||
-                                            !!reordering
-                                        }
-                                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
-                                    >
-                                        <svg
-                                            width="12"
-                                            height="12"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                        >
-                                            <path
-                                                d="M6 9L12 15L18 9"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    </button>
-                                </div>
+                    ))}
+                </div>
+            ) : projects.length === 0 ? (
+                <div className="text-center py-24 text-white/20 text-xs tracking-widest uppercase">
+                    No projects yet. Add your first one.
+                </div>
+            ) : (
+                <div className="space-y-10">
+                    {sections.map(({ type, meta, items }) => (
+                        <section key={type}>
+                            <div className="flex items-baseline justify-between gap-3 mb-3">
+                                <h2 className="text-[11px] tracking-widest uppercase text-[#E8B84B]/70">
+                                    {meta.heading}
+                                </h2>
+                                <span className="text-[10px] text-white/20 tabular-nums">
+                                    {items.length}
+                                </span>
+                            </div>
 
-                                {/* Divider */}
-                                <div className="shrink-0 w-px h-10 bg-[#E8B84B]/10" />
-
-                                {/* Thumbnail */}
-                                <div className="shrink-0 w-16 h-12 sm:w-24 sm:h-16 bg-white/5 border border-white/5 overflow-hidden">
-                                    {project.thumbnail_url ? (
-                                        <img
-                                            src={project.thumbnail_url}
-                                            alt={project.title}
-                                            className="w-full h-full object-cover"
+                            {items.length === 0 ? (
+                                <p className="border border-dashed border-white/8 px-4 py-8 text-center text-[11px] text-white/20 tracking-wider">
+                                    Nothing here yet — set a project&apos;s kind
+                                    to {meta.label} to list it in this section.
+                                </p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {items.map((project, index) => (
+                                        <ProjectRow
+                                            key={project.id}
+                                            project={project}
+                                            index={index}
+                                            count={items.length}
+                                            busy={!!reordering}
+                                            isMoving={reordering === project.id}
+                                            onMoveUp={() =>
+                                                move(items, index, -1)
+                                            }
+                                            onMoveDown={() =>
+                                                move(items, index, 1)
+                                            }
+                                            onEdit={() => openEdit(project)}
+                                            onDelete={() =>
+                                                setDeleteId(project.id)
+                                            }
                                         />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-white/15 text-[9px] tracking-widest uppercase">
-                                            No img
-                                        </div>
-                                    )}
+                                    ))}
                                 </div>
-
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-sm font-semibold text-white truncate">
-                                            {project.title}
-                                        </h3>
-                                        {project.featured && (
-                                            <span className="shrink-0 text-[9px] tracking-widest uppercase px-2 py-0.5 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/20">
-                                                Featured
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-[11px] text-white/35 truncate leading-relaxed">
-                                        {project.description ||
-                                            "No description."}
-                                    </p>
-                                </div>
-
-                                {/* Links — desktop only */}
-                                <div className="shrink-0 hidden md:flex flex-col gap-1.5 items-end pr-2">
-                                    {project.live_url && (
-                                        <a
-                                            href={project.live_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-[10px] tracking-widest uppercase text-[#E8B84B] hover:text-[#E8B84B]/60 transition-colors"
-                                        >
-                                            Live ↗
-                                        </a>
-                                    )}
-                                    {project.repo_url && (
-                                        <a
-                                            href={project.repo_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-[10px] tracking-widest uppercase text-white/25 hover:text-white/50 transition-colors"
-                                        >
-                                            Repo ↗
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Bottom row — tags + actions */}
-                            <div className="flex items-center justify-between gap-3 px-4 pb-3 border-t border-white/5 pt-3">
-                                <div className="flex flex-wrap gap-1.5 min-w-0">
-                                    {(project.tech_stack ?? [])
-                                        .slice(0, 3)
-                                        .map((t) => (
-                                            <span
-                                                key={t}
-                                                className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45 shrink-0"
-                                            >
-                                                {t}
-                                            </span>
-                                        ))}
-                                    {(project.tech_stack ?? []).length > 3 && (
-                                        <span className="text-[10px] px-2 py-0.5 bg-white/5 text-white/25 shrink-0">
-                                            +
-                                            {(project.tech_stack ?? []).length -
-                                                3}
-                                        </span>
-                                    )}
-                                    {project.tag && (
-                                        <span className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15 shrink-0">
-                                            {project.tag}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="shrink-0 flex gap-2">
-                                    {project.live_url && (
-                                        <a
-                                            href={project.live_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="md:hidden text-[10px] tracking-widest uppercase text-[#E8B84B]/70 hover:text-[#E8B84B] transition-colors px-2 py-1.5 border border-[#E8B84B]/15"
-                                        >
-                                            Live ↗
-                                        </a>
-                                    )}
-                                    <button
-                                        onClick={() => openEdit(project)}
-                                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-white/10 text-white/35 hover:border-[#E8B84B]/40 hover:text-[#E8B84B] transition-all cursor-pointer"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => setDeleteId(project.id)}
-                                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-[#E8394D]/20 text-[#E8394D]/55 hover:border-[#E8394D] hover:text-[#E8394D] transition-all cursor-pointer"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                            )}
+                        </section>
+                    ))}
+                </div>
+            )}
 
             {/* Add / Edit Modal */}
             {showForm && (
@@ -483,6 +362,39 @@ export default function Projects() {
                                     }
                                     placeholder="Brief description..."
                                 />
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>Kind</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {PROJECT_TYPES.map((type) => {
+                                        const selected =
+                                            form.project_type === type;
+                                        return (
+                                            <button
+                                                key={type}
+                                                type="button"
+                                                aria-pressed={selected}
+                                                onClick={() =>
+                                                    setForm({
+                                                        ...form,
+                                                        project_type: type,
+                                                    })
+                                                }
+                                                className={`text-[11px] tracking-widest uppercase py-2.5 border transition-colors cursor-pointer ${
+                                                    selected
+                                                        ? "border-[#E8B84B]/50 bg-[#E8B84B]/10 text-[#E8B84B]"
+                                                        : "border-white/10 text-white/35 hover:border-[#E8B84B]/25 hover:text-white/60"
+                                                }`}
+                                            >
+                                                {PROJECT_TYPE_META[type].label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[10px] text-white/20 mt-1.5">
+                                    {PROJECT_TYPE_META[form.project_type].blurb}
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -684,6 +596,195 @@ export default function Projects() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+/** One row of the project list. Identical in both sections, so it lives here
+ *  rather than being duplicated per section. */
+function ProjectRow({
+    project,
+    index,
+    count,
+    busy,
+    isMoving,
+    onMoveUp,
+    onMoveDown,
+    onEdit,
+    onDelete,
+}: {
+    project: Project;
+    index: number;
+    count: number;
+    busy: boolean;
+    isMoving: boolean;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    return (
+        <div
+            className={`bg-[#0F0D2A] border border-[#E8B84B]/10 hover:border-[#E8B84B]/25 transition-all duration-200 group ${
+                isMoving ? "opacity-50" : ""
+            }`}
+        >
+            <div className="flex items-center gap-4 px-4 py-4">
+                {/* Order + arrows */}
+                <div className="shrink-0 flex flex-col items-center gap-1">
+                    <button
+                        onClick={onMoveUp}
+                        disabled={index === 0 || busy}
+                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
+                    >
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
+                            <path
+                                d="M18 15L12 9L6 15"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+                    <span className="text-[10px] text-white/20 tabular-nums w-5 text-center">
+                        {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <button
+                        onClick={onMoveDown}
+                        disabled={index === count - 1 || busy}
+                        className="text-white/20 hover:text-[#E8B84B] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer leading-none"
+                    >
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
+                            <path
+                                d="M6 9L12 15L18 9"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Divider */}
+                <div className="shrink-0 w-px h-10 bg-[#E8B84B]/10" />
+
+                {/* Thumbnail */}
+                <div className="shrink-0 w-16 h-12 sm:w-24 sm:h-16 bg-white/5 border border-white/5 overflow-hidden">
+                    {project.thumbnail_url ? (
+                        <img
+                            src={project.thumbnail_url}
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/15 text-[9px] tracking-widest uppercase">
+                            No img
+                        </div>
+                    )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-white truncate">
+                            {project.title}
+                        </h3>
+                        {project.featured && (
+                            <span className="shrink-0 text-[9px] tracking-widest uppercase px-2 py-0.5 bg-[#E8B84B]/10 text-[#E8B84B] border border-[#E8B84B]/20">
+                                Featured
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-[11px] text-white/35 truncate leading-relaxed">
+                        {project.description || "No description."}
+                    </p>
+                </div>
+
+                {/* Links — desktop only */}
+                <div className="shrink-0 hidden md:flex flex-col gap-1.5 items-end pr-2">
+                    {project.live_url && (
+                        <a
+                            href={project.live_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] tracking-widest uppercase text-[#E8B84B] hover:text-[#E8B84B]/60 transition-colors"
+                        >
+                            Live ↗
+                        </a>
+                    )}
+                    {project.repo_url && (
+                        <a
+                            href={project.repo_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] tracking-widest uppercase text-white/25 hover:text-white/50 transition-colors"
+                        >
+                            Repo ↗
+                        </a>
+                    )}
+                </div>
+            </div>
+
+            {/* Bottom row — tags + actions */}
+            <div className="flex items-center justify-between gap-3 px-4 pb-3 border-t border-white/5 pt-3">
+                <div className="flex flex-wrap gap-1.5 min-w-0">
+                    {(project.tech_stack ?? []).slice(0, 3).map((t) => (
+                        <span
+                            key={t}
+                            className="text-[10px] px-2 py-0.5 bg-white/5 text-white/45 shrink-0"
+                        >
+                            {t}
+                        </span>
+                    ))}
+                    {(project.tech_stack ?? []).length > 3 && (
+                        <span className="text-[10px] px-2 py-0.5 bg-white/5 text-white/25 shrink-0">
+                            +{(project.tech_stack ?? []).length - 3}
+                        </span>
+                    )}
+                    {project.tag && (
+                        <span className="text-[10px] px-2 py-0.5 bg-[#E8B84B]/8 text-[#E8B84B]/65 border border-[#E8B84B]/15 shrink-0">
+                            {project.tag}
+                        </span>
+                    )}
+                </div>
+
+                <div className="shrink-0 flex gap-2">
+                    {project.live_url && (
+                        <a
+                            href={project.live_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="md:hidden text-[10px] tracking-widest uppercase text-[#E8B84B]/70 hover:text-[#E8B84B] transition-colors px-2 py-1.5 border border-[#E8B84B]/15"
+                        >
+                            Live ↗
+                        </a>
+                    )}
+                    <button
+                        onClick={onEdit}
+                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-white/10 text-white/35 hover:border-[#E8B84B]/40 hover:text-[#E8B84B] transition-all cursor-pointer"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="text-[11px] tracking-wider uppercase px-3 py-1.5 border border-[#E8394D]/20 text-[#E8394D]/55 hover:border-[#E8394D] hover:text-[#E8394D] transition-all cursor-pointer"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

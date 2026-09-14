@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    createWorkHistory,
+    deleteWorkHistory,
+    listWorkHistory,
+    reorderWorkHistory,
+    updateWorkHistory,
+} from "@/lib/db";
 
 interface WorkHistory {
     id: string;
@@ -61,12 +67,11 @@ export default function WorkHistoryPage() {
 
     const fetchEntries = async () => {
         setIsFetching(true);
-        const { data, error } = await supabase
-            .from("work_history")
-            .select("*")
-            .order("sort_order", { ascending: true });
-        if (error) console.error(error);
-        else setEntries(data ?? []);
+        try {
+            setEntries(await listWorkHistory());
+        } catch (err) {
+            console.error(err);
+        }
         setIsFetching(false);
     };
 
@@ -107,16 +112,9 @@ export default function WorkHistoryPage() {
 
         try {
             if (editing) {
-                const { error } = await supabase
-                    .from("work_history")
-                    .update(payload)
-                    .eq("id", editing.id);
-                if (error) throw new Error(error.message);
+                await updateWorkHistory(editing.id, payload);
             } else {
-                const { error } = await supabase
-                    .from("work_history")
-                    .insert(payload);
-                if (error) throw new Error(error.message);
+                await createWorkHistory(payload);
             }
             await fetchEntries();
             closeForm();
@@ -129,51 +127,35 @@ export default function WorkHistoryPage() {
 
     const handleDelete = async (id: string) => {
         setIsDeleting(true);
-        const { error } = await supabase
-            .from("work_history")
-            .delete()
-            .eq("id", id);
-        if (error) console.error(error);
-        else {
+        try {
+            await deleteWorkHistory(id);
             await fetchEntries();
             setDeleteId(null);
+        } catch (err) {
+            console.error(err);
         }
         setIsDeleting(false);
     };
 
-    const moveUp = async (index: number) => {
-        if (index === 0) return;
-        const current = entries[index];
-        const above = entries[index - 1];
-        setReordering(current.id);
-        await supabase
-            .from("work_history")
-            .update({ sort_order: above.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("work_history")
-            .update({ sort_order: current.sort_order })
-            .eq("id", above.id);
-        await fetchEntries();
+    // One reorder call that writes only the rows whose position changed,
+    // instead of two racing per-row writes.
+    const move = async (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= entries.length) return;
+        const next = [...entries];
+        [next[index], next[target]] = [next[target], next[index]];
+        setReordering(entries[index].id);
+        try {
+            await reorderWorkHistory(next.map((i) => i.id));
+            await fetchEntries();
+        } catch (err) {
+            console.error(err);
+        }
         setReordering(null);
     };
 
-    const moveDown = async (index: number) => {
-        if (index === entries.length - 1) return;
-        const current = entries[index];
-        const below = entries[index + 1];
-        setReordering(current.id);
-        await supabase
-            .from("work_history")
-            .update({ sort_order: below.sort_order })
-            .eq("id", current.id);
-        await supabase
-            .from("work_history")
-            .update({ sort_order: current.sort_order })
-            .eq("id", below.id);
-        await fetchEntries();
-        setReordering(null);
-    };
+    const moveUp = (index: number) => move(index, -1);
+    const moveDown = (index: number) => move(index, 1);
 
     return (
         <div className="min-h-screen text-white">

@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+    deleteResume,
+    listResumes,
+    setCurrentResume,
+    uploadResume,
+} from "@/lib/db";
 
-interface Resume {
-    id: string;
-    label: string;
-    file_url: string;
-    file_name: string;
-    is_current: boolean;
-    created_at: string;
-}
+import type { Resume } from "@/lib/types";
 
 export default function ResumePage() {
     const [resumes, setResumes] = useState<Resume[]>([]);
@@ -32,12 +30,11 @@ export default function ResumePage() {
 
     const fetchResumes = async () => {
         setIsFetching(true);
-        const { data, error } = await supabase
-            .from("resumes")
-            .select("*")
-            .order("created_at", { ascending: false });
-        if (error) console.error(error);
-        else setResumes(data ?? []);
+        try {
+            setResumes(await listResumes());
+        } catch (err) {
+            console.error(err);
+        }
         setIsFetching(false);
     };
 
@@ -51,30 +48,9 @@ export default function ResumePage() {
         setIsUploading(true);
 
         try {
-            // Upload file to storage
-            const filePath = `${Date.now()}_${file.name}`;
-            const { error: uploadError } = await supabase.storage
-                .from("resumes")
-                .upload(filePath, file);
-
-            if (uploadError) throw new Error(uploadError.message);
-
-            // Get public URL
-            const {
-                data: { publicUrl },
-            } = supabase.storage.from("resumes").getPublicUrl(filePath);
-
-            // Insert record
-            const { error: insertError } = await supabase
-                .from("resumes")
-                .insert({
-                    label: label || file.name,
-                    file_url: publicUrl,
-                    file_name: file.name,
-                    is_current: resumes.length === 0, // auto-set as current if first upload
-                });
-
-            if (insertError) throw new Error(insertError.message);
+            // Stores the blob and creates the row together, cleaning up the
+            // blob if the row fails — so neither is left orphaned.
+            await uploadResume(label, file);
 
             await fetchResumes();
             setShowForm(false);
@@ -90,22 +66,8 @@ export default function ResumePage() {
     const setAsCurrent = async (id: string) => {
         setSettingCurrentId(id);
         try {
-            // Set all to false first
-            const { error: resetError } = await supabase
-                .from("resumes")
-                .update({ is_current: false })
-                .neq("id", "00000000-0000-0000-0000-000000000000"); // update all rows
-
-            if (resetError) throw new Error(resetError.message);
-
-            // Set selected as current
-            const { error } = await supabase
-                .from("resumes")
-                .update({ is_current: true })
-                .eq("id", id);
-
-            if (error) throw new Error(error.message);
-
+            // Clear-then-set, so two rows are never both current.
+            await setCurrentResume(id);
             await fetchResumes();
         } catch (err) {
             console.error(err);
@@ -115,23 +77,14 @@ export default function ResumePage() {
     };
 
     const handleDelete = async (id: string) => {
+        const resume = resumes.find((r) => r.id === id);
+        if (!resume) return;
+
         setIsDeleting(true);
         try {
-            const resume = resumes.find((r) => r.id === id);
-
-            // Delete from storage
-            if (resume) {
-                const filePath = resume.file_url.split("/resumes/")[1];
-                await supabase.storage.from("resumes").remove([filePath]);
-            }
-
-            // Delete from DB
-            const { error } = await supabase
-                .from("resumes")
-                .delete()
-                .eq("id", id);
-            if (error) throw new Error(error.message);
-
+            // Removes the row, its stored file, and promotes a replacement if
+            // this was the live CV.
+            await deleteResume(resume);
             await fetchResumes();
             setDeleteId(null);
         } catch (err) {
