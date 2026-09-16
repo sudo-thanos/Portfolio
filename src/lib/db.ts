@@ -29,6 +29,26 @@ export class DbError extends Error {
     }
 }
 
+/**
+ * A write that matched no rows.
+ *
+ * PostgREST answers an UPDATE or DELETE that changed nothing with 204 and no
+ * error — and Row Level Security filters rows out rather than refusing the
+ * request. So a write the policies disallow is indistinguishable from a
+ * successful one unless the affected rows are asked for and counted. Left
+ * unchecked it looks like "the dashboard silently ignored my edit".
+ */
+class NoRowsAffected extends DbError {
+    constructor(what: string) {
+        super(
+            `${what} changed nothing. The row may have been deleted, or your ` +
+                `account may not have permission to write it — check the ` +
+                `table's row-level security policies for the "authenticated" role.`,
+        );
+        this.name = "NoRowsAffected";
+    }
+}
+
 function unwrap<T>({
     data,
     error,
@@ -74,10 +94,13 @@ async function insertRow<T extends OrderedTable>(
     table: T,
     payload: Partial<RowOf[T]>,
 ): Promise<void> {
-    const { error } = await db
+    // select() so the inserted row comes back and can be counted; see NoRowsAffected.
+    const { data, error } = await db
         .from(table)
-        .insert(payload as Record<string, unknown>);
+        .insert(payload as Record<string, unknown>)
+        .select("id");
     if (error) throw new DbError(error.message);
+    if (!data?.length) throw new NoRowsAffected(`Creating the ${table} row`);
 }
 
 async function updateRow<T extends OrderedTable>(
@@ -95,13 +118,23 @@ async function updateRow<T extends OrderedTable>(
         ...fields
     } = payload as Record<string, unknown>;
 
-    const { error } = await db.from(table).update(fields).eq("id", id);
+    const { data, error } = await db
+        .from(table)
+        .update(fields)
+        .eq("id", id)
+        .select("id");
     if (error) throw new DbError(error.message);
+    if (!data?.length) throw new NoRowsAffected(`Updating the ${table} row`);
 }
 
 async function deleteRow(table: OrderedTable, id: string): Promise<void> {
-    const { error } = await db.from(table).delete().eq("id", id);
+    const { data, error } = await db
+        .from(table)
+        .delete()
+        .eq("id", id)
+        .select("id");
     if (error) throw new DbError(error.message);
+    if (!data?.length) throw new NoRowsAffected(`Deleting the ${table} row`);
 }
 
 /**
@@ -127,12 +160,62 @@ async function reorder(table: OrderedTable, ids: string[]): Promise<void> {
             db
                 .from(table)
                 .update({ sort_order: positionOf.get(row.id)! })
-                .eq("id", row.id),
+                .eq("id", row.id)
+                .select("id"),
         ),
     );
 
     const failed = results.find((r) => r.error);
     if (failed?.error) throw new DbError(failed.error.message);
+    if (results.some((r) => !r.data?.length)) {
+        throw new NoRowsAffected(`Reordering ${table}`);
+    }
+}
+
+/**
+ * Tell the site to drop its cached copy of the public pages.
+ *
+ * Writes go straight from this browser to Supabase, so Next never learns that
+ * anything changed and keeps serving its cached render. Without this an edit
+ * takes up to five minutes to appear on the live site, which reads as "the
+ * dashboard isn't syncing".
+ *
+ * Best-effort on purpose: the database write has already succeeded by this
+ * point, so a failure here means the site is briefly stale, not that the edit
+ * was lost. Surfacing it as a failed save would be a lie.
+ */
+async function revalidatePublicSite(): Promise<void> {
+    try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+
+        const res = await fetch("/api/revalidate", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+            console.error(
+                `Public pages may be stale for up to ${5} minutes: revalidate returned ${res.status}`,
+            );
+        }
+    } catch (err) {
+        console.error("Public pages may be stale:", err);
+    }
+}
+
+/**
+ * Wrap a write so the public site is refreshed once it lands. Applied at the
+ * export boundary rather than inside each helper, so there is exactly one list
+ * of "things that change what visitors see" and it is visible below.
+ */
+function publishes<A extends unknown[]>(
+    write: (...args: A) => Promise<void>,
+): (...args: A) => Promise<void> {
+    return async (...args: A) => {
+        await write(...args);
+        await revalidatePublicSite();
+    };
 }
 
 // --- Storage -----------------------------------------------------------------
@@ -189,18 +272,22 @@ async function removeFromBucket(url: string, bucket: string): Promise<void> {
 export type ProjectInput = Omit<Project, "id" | "created_at">;
 
 export const listProjects = () => listOrdered("projects");
-export const createProject = (payload: ProjectInput) =>
-    insertRow("projects", payload);
-export const updateProject = (id: string, payload: ProjectInput) =>
-    updateRow("projects", id, payload);
-export const reorderProjects = (ids: string[]) => reorder("projects", ids);
+export const createProject = publishes((payload: ProjectInput) =>
+    insertRow("projects", payload),
+);
+export const updateProject = publishes((id: string, payload: ProjectInput) =>
+    updateRow("projects", id, payload),
+);
+export const reorderProjects = publishes((ids: string[]) =>
+    reorder("projects", ids),
+);
 
-export async function deleteProject(project: Project): Promise<void> {
+export const deleteProject = publishes(async (project: Project) => {
     await deleteRow("projects", project.id);
     if (project.thumbnail_url) {
         await removeFromBucket(project.thumbnail_url, BUCKETS.projectImages);
     }
-}
+});
 
 export const uploadProjectImage = (file: File) =>
     uploadTo(BUCKETS.projectImages, "thumbnails", file);
@@ -210,37 +297,54 @@ export const uploadProjectImage = (file: File) =>
 export type SkillInput = Omit<Skill, "id" | "created_at">;
 
 export const listSkills = () => listOrdered("skills");
-export const createSkill = (payload: SkillInput) => insertRow("skills", payload);
-export const updateSkill = (id: string, payload: SkillInput) =>
-    updateRow("skills", id, payload);
-export const deleteSkill = (id: string) => deleteRow("skills", id);
-export const reorderSkills = (ids: string[]) => reorder("skills", ids);
+export const createSkill = publishes((payload: SkillInput) =>
+    insertRow("skills", payload),
+);
+export const updateSkill = publishes((id: string, payload: SkillInput) =>
+    updateRow("skills", id, payload),
+);
+export const deleteSkill = publishes((id: string) => deleteRow("skills", id));
+export const reorderSkills = publishes((ids: string[]) =>
+    reorder("skills", ids),
+);
 
 // --- Work history ------------------------------------------------------------
 
 export type WorkHistoryInput = Omit<WorkHistoryEntry, "id" | "created_at">;
 
 export const listWorkHistory = () => listOrdered("work_history");
-export const createWorkHistory = (payload: WorkHistoryInput) =>
-    insertRow("work_history", payload);
-export const updateWorkHistory = (id: string, payload: WorkHistoryInput) =>
-    updateRow("work_history", id, payload);
-export const deleteWorkHistory = (id: string) => deleteRow("work_history", id);
-export const reorderWorkHistory = (ids: string[]) =>
-    reorder("work_history", ids);
+export const createWorkHistory = publishes((payload: WorkHistoryInput) =>
+    insertRow("work_history", payload),
+);
+export const updateWorkHistory = publishes(
+    (id: string, payload: WorkHistoryInput) =>
+        updateRow("work_history", id, payload),
+);
+export const deleteWorkHistory = publishes((id: string) =>
+    deleteRow("work_history", id),
+);
+export const reorderWorkHistory = publishes((ids: string[]) =>
+    reorder("work_history", ids),
+);
 
 // --- Social links ------------------------------------------------------------
 
 export type SocialLinkInput = Omit<SocialLink, "id" | "created_at">;
 
 export const listSocialLinks = () => listOrdered("social_links");
-export const createSocialLink = (payload: SocialLinkInput) =>
-    insertRow("social_links", payload);
-export const updateSocialLink = (id: string, payload: SocialLinkInput) =>
-    updateRow("social_links", id, payload);
-export const deleteSocialLink = (id: string) => deleteRow("social_links", id);
-export const reorderSocialLinks = (ids: string[]) =>
-    reorder("social_links", ids);
+export const createSocialLink = publishes((payload: SocialLinkInput) =>
+    insertRow("social_links", payload),
+);
+export const updateSocialLink = publishes(
+    (id: string, payload: SocialLinkInput) =>
+        updateRow("social_links", id, payload),
+);
+export const deleteSocialLink = publishes((id: string) =>
+    deleteRow("social_links", id),
+);
+export const reorderSocialLinks = publishes((ids: string[]) =>
+    reorder("social_links", ids),
+);
 
 // --- Resumes -----------------------------------------------------------------
 
@@ -259,20 +363,22 @@ export async function uploadResume(
 ): Promise<void> {
     const { url, path } = await uploadTo(BUCKETS.resumes, "", file);
 
-    const { error } = await supabase.from("resumes").insert({
+    const { data, error } = await supabase.from("resumes").insert({
         label: label || file.name,
         file_url: url,
         file_name: file.name,
         // The very first upload becomes the live CV, so the Download button is
         // never pointing at nothing.
         is_current: (await listResumes()).length === 0,
-    });
+    }).select("id");
 
-    if (error) {
+    if (error || !data?.length) {
         // The row is the thing that matters; don't leave a blob behind for a
         // record that was never created.
         await supabase.storage.from(BUCKETS.resumes).remove([path]);
-        throw new DbError(error.message);
+        throw error
+            ? new DbError(error.message)
+            : new NoRowsAffected("Creating the resume row");
     }
 }
 
@@ -286,21 +392,24 @@ export async function setCurrentResume(id: string): Promise<void> {
             .eq("is_current", true)
             .select("id"),
     );
-    unwrap(
+    const promoted = unwrap(
         await supabase
             .from("resumes")
             .update({ is_current: true })
             .eq("id", id)
             .select("id"),
     );
+    if (!promoted?.length) throw new NoRowsAffected("Setting the current resume");
 }
 
 export async function deleteResume(resume: Resume): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from("resumes")
         .delete()
-        .eq("id", resume.id);
+        .eq("id", resume.id)
+        .select("id");
     if (error) throw new DbError(error.message);
+    if (!data?.length) throw new NoRowsAffected("Deleting the resume");
 
     await removeFromBucket(resume.file_url, BUCKETS.resumes);
 

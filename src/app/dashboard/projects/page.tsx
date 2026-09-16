@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import DashboardError, { errorMessage } from "@/components/DashboardError";
 import {
     createProject,
     deleteProject,
@@ -34,6 +35,7 @@ const empty: ProjectInput = {
 
 export default function Projects() {
     const [projects, setProjects] = useState<Project[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Project | null>(null);
     const [form, setForm] = useState(empty);
@@ -86,6 +88,7 @@ export default function Projects() {
         try {
             setProjects(await listProjects());
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsFetching(false);
@@ -129,6 +132,7 @@ export default function Projects() {
             await fetchProjects();
             closeForm();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -147,6 +151,7 @@ export default function Projects() {
             setDeleteId(null);
             await fetchProjects();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsDeleting(false);
@@ -190,6 +195,7 @@ export default function Projects() {
             await reorderProjects(ids);
             await fetchProjects();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setReordering(null);
@@ -206,6 +212,11 @@ export default function Projects() {
 
     return (
         <div className="min-h-screen text-white">
+            <DashboardError
+                message={error}
+                onDismiss={() => setError(null)}
+            />
+
             {/* Header */}
             <div className="border-b border-[#E8B84B]/10 pb-5 mb-6 flex items-start justify-between gap-4">
                 <div>

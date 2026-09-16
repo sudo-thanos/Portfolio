@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardError, { errorMessage } from "@/components/DashboardError";
 import {
     createSkill,
     deleteSkill,
@@ -25,6 +26,7 @@ const empty: Omit<Skill, "id" | "created_at"> = {
 
 export default function SkillsPage() {
     const [skills, setSkills] = useState<Skill[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Skill | null>(null);
@@ -44,6 +46,7 @@ export default function SkillsPage() {
         try {
             setSkills(await listSkills());
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsFetching(false);
@@ -87,6 +90,7 @@ export default function SkillsPage() {
             await fetchSkills();
             closeForm();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsSubmitting(false);
@@ -100,6 +104,7 @@ export default function SkillsPage() {
             await fetchSkills();
             setDeleteId(null);
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsDeleting(false);
@@ -117,6 +122,7 @@ export default function SkillsPage() {
             await reorderSkills(next.map((s) => s.id));
             await fetchSkills();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setReordering(null);
@@ -137,6 +143,11 @@ export default function SkillsPage() {
 
     return (
         <div className="min-h-screen text-white">
+            <DashboardError
+                message={error}
+                onDismiss={() => setError(null)}
+            />
+
             {/* Header */}
             <div className="border-b border-[#E8B84B]/10 flex items-center justify-between pb-6 mb-6">
                 <div>

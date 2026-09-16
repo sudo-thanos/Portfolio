@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardError, { errorMessage } from "@/components/DashboardError";
 import {
     createWorkHistory,
     deleteWorkHistory,
@@ -50,6 +51,7 @@ const empty: Omit<WorkHistory, "id"> = {
 
 export default function WorkHistoryPage() {
     const [entries, setEntries] = useState<WorkHistory[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<WorkHistory | null>(null);
@@ -70,6 +72,7 @@ export default function WorkHistoryPage() {
         try {
             setEntries(await listWorkHistory());
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsFetching(false);
@@ -119,6 +122,7 @@ export default function WorkHistoryPage() {
             await fetchEntries();
             closeForm();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsSubmitting(false);
@@ -132,6 +136,7 @@ export default function WorkHistoryPage() {
             await fetchEntries();
             setDeleteId(null);
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsDeleting(false);
@@ -149,6 +154,7 @@ export default function WorkHistoryPage() {
             await reorderWorkHistory(next.map((i) => i.id));
             await fetchEntries();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setReordering(null);
@@ -159,6 +165,11 @@ export default function WorkHistoryPage() {
 
     return (
         <div className="min-h-screen text-white">
+            <DashboardError
+                message={error}
+                onDismiss={() => setError(null)}
+            />
+
             {/* Header */}
             <div className="border-b border-[#E8B84B]/10 flex items-center justify-between pb-6 mb-6">
                 <div>

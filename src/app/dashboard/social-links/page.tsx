@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardError, { errorMessage } from "@/components/DashboardError";
 import {
     createSocialLink,
     deleteSocialLink,
@@ -35,6 +36,7 @@ const PRESETS = [
 
 export default function SocialLinksPage() {
     const [links, setLinks] = useState<SocialLink[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<SocialLink | null>(null);
@@ -54,6 +56,7 @@ export default function SocialLinksPage() {
         try {
             setLinks(await listSocialLinks());
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsFetching(false);
@@ -109,6 +112,7 @@ export default function SocialLinksPage() {
             await fetchLinks();
             closeForm();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsSubmitting(false);
@@ -122,6 +126,7 @@ export default function SocialLinksPage() {
             await fetchLinks();
             setDeleteId(null);
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsDeleting(false);
@@ -139,6 +144,7 @@ export default function SocialLinksPage() {
             await reorderSocialLinks(next.map((l) => l.id));
             await fetchLinks();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setReordering(null);
@@ -149,6 +155,11 @@ export default function SocialLinksPage() {
 
     return (
         <div className="min-h-screen text-white">
+            <DashboardError
+                message={error}
+                onDismiss={() => setError(null)}
+            />
+
             {/* Header */}
             <div className="border-b border-[#E8B84B]/10 flex items-center justify-between pb-6 mb-6">
                 <div>

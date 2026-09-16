@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardError, { errorMessage } from "@/components/DashboardError";
 import {
     deleteResume,
     listResumes,
@@ -12,6 +13,7 @@ import type { Resume } from "@/lib/types";
 
 export default function ResumePage() {
     const [resumes, setResumes] = useState<Resume[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [label, setLabel] = useState("");
@@ -33,6 +35,7 @@ export default function ResumePage() {
         try {
             setResumes(await listResumes());
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         }
         setIsFetching(false);
@@ -57,6 +60,7 @@ export default function ResumePage() {
             setLabel("");
             setFile(null);
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsUploading(false);
@@ -70,6 +74,7 @@ export default function ResumePage() {
             await setCurrentResume(id);
             await fetchResumes();
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setSettingCurrentId(null);
@@ -88,6 +93,7 @@ export default function ResumePage() {
             await fetchResumes();
             setDeleteId(null);
         } catch (err) {
+            setError(errorMessage(err));
             console.error(err);
         } finally {
             setIsDeleting(false);
@@ -104,6 +110,11 @@ export default function ResumePage() {
 
     return (
         <div className="min-h-screen text-white">
+            <DashboardError
+                message={error}
+                onDismiss={() => setError(null)}
+            />
+
             {/* Header */}
             <div className="border-b border-[#E8B84B]/10 flex items-center justify-between pb-6 mb-6">
                 <div>
